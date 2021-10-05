@@ -1,9 +1,8 @@
-package commands
+package delroot
 
 import (
 	"database/sql"
 	"fmt"
-	"os"
 
 	"github.com/proofrock/snapkup/util"
 )
@@ -11,10 +10,9 @@ import (
 var drSql = "DELETE FROM ROOTS WHERE PATH = ?"
 
 func DelRoot(bkpDir string, toDel *string) error {
-	dbPath := bkpDir + "/" + util.DbFileName
-
-	if _, errNotExists := os.Stat(dbPath); os.IsNotExist(errNotExists) {
-		return fmt.Errorf("Database does not exists, initialize backup dir first (%s)", dbPath)
+	dbPath, errComposingDbPath := util.DbFile(bkpDir)
+	if errComposingDbPath != nil {
+		return errComposingDbPath
 	}
 
 	db, errOpeningDb := sql.Open("sqlite3", dbPath)

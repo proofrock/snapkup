@@ -1,9 +1,8 @@
-package commands
+package addroot
 
 import (
 	"database/sql"
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/proofrock/snapkup/util"
@@ -13,15 +12,14 @@ var arSql1 = "SELECT 1 FROM ROOTS WHERE PATH = ? LIMIT 1"
 var arSql2 = "INSERT INTO ROOTS (PATH) VALUES (?)"
 
 func AddRoot(bkpDir string, _toAdd *string) error {
-	dbPath := bkpDir + "/" + util.DbFileName
+	dbPath, errComposingDbPath := util.DbFile(bkpDir)
+	if errComposingDbPath != nil {
+		return errComposingDbPath
+	}
 
 	toAdd, errAbsolutizing := filepath.Abs(*_toAdd)
 	if errAbsolutizing != nil {
 		return errAbsolutizing
-	}
-
-	if _, errNotExists := os.Stat(dbPath); os.IsNotExist(errNotExists) {
-		return fmt.Errorf("Database does not exists, initialize backup dir first (%s)", dbPath)
 	}
 
 	db, errOpeningDb := sql.Open("sqlite3", dbPath)

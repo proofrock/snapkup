@@ -15,12 +15,12 @@ const banner = `   ____               __
 
 const toReplace = "############"
 
-func PrintBanner(version string) {
+func Banner(version string) string {
 	rsLen := len(toReplace)
 	verLen := len(version)
 	padLeft := (rsLen - verLen) / 2
 	padRight := rsLen - verLen - padLeft
 	paddedLeft := fmt.Sprintf("%"+strconv.Itoa(padLeft+verLen)+"v", version)
 	padded := fmt.Sprintf("%-"+strconv.Itoa(padRight+len(paddedLeft))+"v", paddedLeft)
-	println(strings.Replace(banner, toReplace, padded, 1))
+	return strings.Replace(banner, toReplace, padded, 1)
 }

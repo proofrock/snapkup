@@ -5,17 +5,20 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/proofrock/snapkup/commands"
-	"github.com/proofrock/snapkup/util"
 	"gopkg.in/alecthomas/kingpin.v2"
+
+	addroot "github.com/proofrock/snapkup/commands/add_root"
+	delroot "github.com/proofrock/snapkup/commands/del_root"
+	initcmd "github.com/proofrock/snapkup/commands/init"
+	listroots "github.com/proofrock/snapkup/commands/list_roots"
+	"github.com/proofrock/snapkup/commands/snap"
+	"github.com/proofrock/snapkup/util"
 )
 
 const version = "v0.0.1A1"
 
 var (
-	app     = kingpin.New("snapkup", "Incremental backups for the masses.")
 	_bkpDir = kingpin.Flag("backup-dir", "The directory to store backups into.").Required().Short('d').ExistingDir()
-	quiet   = kingpin.Flag("quiet", "Don't print the banner.").Short('q').Bool()
 
 	initCmd = kingpin.Command("init", "Initializes an empty backups directory.")
 
@@ -26,16 +29,14 @@ var (
 
 	delRootCmd = kingpin.Command("del-root", "Removes a root from the pool.")
 	rootToDel  = delRootCmd.Arg("root", "The root to remove.").Required().String()
+
+	snapCmd = kingpin.Command("snap", "Takes a new snapshot of the roots.")
 )
 
 func main() {
-	kingpin.Version(version)
+	kingpin.Version(util.Banner(version))
 
 	cliResult := kingpin.Parse()
-
-	if !*quiet {
-		util.PrintBanner(version)
-	}
 
 	var err error = nil
 
@@ -44,13 +45,15 @@ func main() {
 	} else {
 		switch cliResult {
 		case initCmd.FullCommand():
-			err = commands.Init(bkpDir)
+			err = initcmd.Init(bkpDir)
 		case addRootCmd.FullCommand():
-			err = commands.AddRoot(bkpDir, rootToAdd)
+			err = addroot.AddRoot(bkpDir, rootToAdd)
 		case listRootsCmd.FullCommand():
-			err = commands.ListRoots(bkpDir)
+			err = listroots.ListRoots(bkpDir)
 		case delRootCmd.FullCommand():
-			err = commands.DelRoot(bkpDir, rootToDel)
+			err = delroot.DelRoot(bkpDir, rootToDel)
+		case snapCmd.FullCommand():
+			err = snap.Snap(bkpDir)
 		}
 	}
 

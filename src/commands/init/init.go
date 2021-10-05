@@ -1,4 +1,4 @@
-package commands
+package init
 
 import (
 	"database/sql"
