@@ -55,7 +55,7 @@ func AddRoot(bkpDir string, _toAdd *string) error {
 		return errCommitting
 	}
 
-	println(fmt.Sprintf("Root correctly added (%s)", toAdd))
+	println("Root correctly added (", toAdd, ")")
 
 	return nil
 }

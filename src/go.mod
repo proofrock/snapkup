@@ -3,6 +3,7 @@ module github.com/proofrock/snapkup
 go 1.17
 
 require (
+	github.com/dchest/siphash v1.2.2
 	github.com/mattn/go-sqlite3 v1.14.8
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 )

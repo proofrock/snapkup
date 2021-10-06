@@ -2,7 +2,6 @@ package listroots
 
 import (
 	"database/sql"
-	"fmt"
 
 	"github.com/proofrock/snapkup/util"
 )
@@ -25,7 +24,7 @@ func ListRoots(bkpDir string) error {
 	}
 
 	for _, root := range roots {
-		fmt.Printf("%s\n", root)
+		println(root)
 	}
 
 	return nil

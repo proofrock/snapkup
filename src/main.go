@@ -11,6 +11,7 @@ import (
 	delroot "github.com/proofrock/snapkup/commands/del_root"
 	initcmd "github.com/proofrock/snapkup/commands/init"
 	listroots "github.com/proofrock/snapkup/commands/list_roots"
+
 	"github.com/proofrock/snapkup/commands/snap"
 	"github.com/proofrock/snapkup/util"
 )

@@ -29,7 +29,7 @@ func DelRoot(bkpDir string, toDel *string) error {
 		return fmt.Errorf("Root not found in pool (%s)", *toDel)
 	}
 
-	println(fmt.Sprintf("Root correctly deleted (%s)", *toDel))
+	println("Root correctly deleted (" + *toDel + ")")
 
 	return nil
 }
