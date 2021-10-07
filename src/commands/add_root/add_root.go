@@ -8,9 +8,6 @@ import (
 	"github.com/proofrock/snapkup/util"
 )
 
-var arSql1 = "SELECT 1 FROM ROOTS WHERE PATH = ? LIMIT 1"
-var arSql2 = "INSERT INTO ROOTS (PATH) VALUES (?)"
-
 func AddRoot(bkpDir string, _toAdd *string) error {
 	dbPath, errComposingDbPath := util.DbFile(bkpDir)
 	if errComposingDbPath != nil {
@@ -33,7 +30,8 @@ func AddRoot(bkpDir string, _toAdd *string) error {
 		return errBeginning
 	}
 
-	rows, errQuerying := db.Query(arSql1, toAdd)
+	// TODO QueryOnce
+	rows, errQuerying := db.Query("SELECT 1 FROM ROOTS WHERE PATH = ? LIMIT 1", toAdd)
 	if errQuerying != nil {
 		return errQuerying
 	}
@@ -46,7 +44,7 @@ func AddRoot(bkpDir string, _toAdd *string) error {
 		return errClosingQry
 	}
 
-	if _, errExecing := tx.Exec(arSql2, toAdd); errExecing != nil {
+	if _, errExecing := tx.Exec("INSERT INTO ROOTS (PATH) VALUES (?)", toAdd); errExecing != nil {
 		tx.Rollback() // error is not managed
 		return errExecing
 	}

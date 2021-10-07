@@ -9,10 +9,12 @@ import (
 
 	addroot "github.com/proofrock/snapkup/commands/add_root"
 	delroot "github.com/proofrock/snapkup/commands/del_root"
+	delsnaps "github.com/proofrock/snapkup/commands/del_snap"
 	initcmd "github.com/proofrock/snapkup/commands/init"
 	listroots "github.com/proofrock/snapkup/commands/list_roots"
+	listsnaps "github.com/proofrock/snapkup/commands/list_snaps"
+	snap "github.com/proofrock/snapkup/commands/snap"
 
-	"github.com/proofrock/snapkup/commands/snap"
 	"github.com/proofrock/snapkup/util"
 )
 
@@ -32,6 +34,11 @@ var (
 	rootToDel  = delRootCmd.Arg("root", "The root to remove.").Required().String()
 
 	snapCmd = kingpin.Command("snap", "Takes a new snapshot of the roots.")
+
+	listSnapsCmd = kingpin.Command("list-snaps", "Lists the snaps currently in the pool")
+
+	delSnapCmd = kingpin.Command("del-snap", "Removes a snap from the pool.")
+	snapToDel  = delSnapCmd.Arg("snap", "The snap to remove.").Required().Int()
 )
 
 func main() {
@@ -55,6 +62,10 @@ func main() {
 			err = delroot.DelRoot(bkpDir, rootToDel)
 		case snapCmd.FullCommand():
 			err = snap.Snap(bkpDir)
+		case listSnapsCmd.FullCommand():
+			err = listsnaps.ListSnaps(bkpDir)
+		case delSnapCmd.FullCommand():
+			err = delsnaps.DelSnap(bkpDir, snapToDel)
 		}
 	}
 

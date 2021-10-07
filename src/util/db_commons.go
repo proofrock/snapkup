@@ -2,15 +2,13 @@ package util
 
 import "database/sql"
 
-var grlSql = "SELECT PATH FROM ROOTS ORDER BY PATH ASC"
-
 type dbThingy interface {
 	Query(qry string, args ...interface{}) (*sql.Rows, error)
 }
 
 func GetRootsList(db dbThingy) ([]string, error) {
 	var roots []string
-	rows, errQuerying := db.Query(grlSql)
+	rows, errQuerying := db.Query("SELECT PATH FROM ROOTS ORDER BY PATH ASC")
 	if errQuerying != nil {
 		return nil, errQuerying
 	}
