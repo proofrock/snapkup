@@ -7,7 +7,7 @@ import (
 	"github.com/proofrock/snapkup/util"
 )
 
-func DelRoot(bkpDir string, toDel *string) error {
+func DelRoot(bkpDir string, toDel string) error {
 	dbPath, errComposingDbPath := util.DbFile(bkpDir)
 	if errComposingDbPath != nil {
 		return errComposingDbPath
@@ -19,15 +19,15 @@ func DelRoot(bkpDir string, toDel *string) error {
 	}
 	defer db.Close()
 
-	if res, errExecing := db.Exec("DELETE FROM ROOTS WHERE PATH = ?", *toDel); errExecing != nil {
+	if res, errExecing := db.Exec("DELETE FROM ROOTS WHERE PATH = ?", toDel); errExecing != nil {
 		return errExecing
 	} else if numAffected, errCalcRowsAffected := res.RowsAffected(); errCalcRowsAffected != nil {
 		return errExecing
 	} else if numAffected == 0 {
-		return fmt.Errorf("Root not found in pool (%s)", *toDel)
+		return fmt.Errorf("Root not found in pool (%s)", toDel)
 	}
 
-	println("Root correctly deleted (", *toDel, ")")
+	println("Root correctly deleted (", toDel, ")")
 
 	return nil
 }

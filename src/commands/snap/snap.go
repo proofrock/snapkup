@@ -3,8 +3,6 @@ package snap
 import (
 	"database/sql"
 	"fmt"
-	"io"
-	"os"
 	"path"
 	"sort"
 	"time"
@@ -110,29 +108,9 @@ func Snap(bkpDir string) error {
 
 		pathDest := path.Join(bkpDir, file.Hash)
 
-		if _, err := os.Stat(pathDest); !os.IsNotExist(err) {
-			// an identical file already exists
-			continue
-		}
-
-		source, err := os.Open(file.FullPath)
-		if err != nil {
+		if errCopying := util.CopyNotOverwrite(file.FullPath, pathDest); errCopying != nil {
 			tx.Rollback()
-			return err
-		}
-		defer source.Close()
-
-		destination, err := os.Create(pathDest)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-		defer destination.Close()
-
-		_, err = io.Copy(destination, source)
-		if err != nil {
-			tx.Rollback()
-			return err
+			return errCopying
 		}
 	}
 
@@ -140,21 +118,23 @@ func Snap(bkpDir string) error {
 		return errCommitting
 	}
 
+	fmt.Printf("Snap %d correctly created\n", snap)
+
 	return nil
 }
 
-func recNewSnap(tx *sql.Tx) (nuSnap int, err error) {
+func recNewSnap(tx *sql.Tx) (nuSnap int, errNewSnap error) {
 	row := tx.QueryRow("SELECT COALESCE(MAX(ID) + 1, 0) FROM SNAPS")
-	err = row.Scan(&nuSnap)
-	if err != nil {
+	errNewSnap = row.Scan(&nuSnap)
+	if errNewSnap != nil {
 		return
 	}
-	_, err = tx.Exec("INSERT INTO SNAPS (ID, TIMESTAMP) VALUES (?, ?)", nuSnap, time.Now().UnixMilli())
+	_, errNewSnap = tx.Exec("INSERT INTO SNAPS (ID, TIMESTAMP) VALUES (?, ?)", nuSnap, time.Now().UnixMilli())
 	return
 }
 
-func getMaxUID(tx *sql.Tx) (uid int, err error) {
+func getMaxUID(tx *sql.Tx) (uid int, errGetMaxUID error) {
 	row := tx.QueryRow("SELECT COALESCE(MAX(UID) + 1, 0) FROM ITEMS")
-	err = row.Scan(&uid)
+	errGetMaxUID = row.Scan(&uid)
 	return
 }

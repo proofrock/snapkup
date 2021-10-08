@@ -3,20 +3,14 @@ package addroot
 import (
 	"database/sql"
 	"fmt"
-	"path/filepath"
 
 	"github.com/proofrock/snapkup/util"
 )
 
-func AddRoot(bkpDir string, _toAdd *string) error {
+func AddRoot(bkpDir string, toAdd string) error {
 	dbPath, errComposingDbPath := util.DbFile(bkpDir)
 	if errComposingDbPath != nil {
 		return errComposingDbPath
-	}
-
-	toAdd, errAbsolutizing := filepath.Abs(*_toAdd)
-	if errAbsolutizing != nil {
-		return errAbsolutizing
 	}
 
 	db, errOpeningDb := sql.Open("sqlite3", dbPath)
@@ -31,17 +25,11 @@ func AddRoot(bkpDir string, _toAdd *string) error {
 	}
 
 	// TODO QueryOnce
-	rows, errQuerying := db.Query("SELECT 1 FROM ROOTS WHERE PATH = ? LIMIT 1", toAdd)
-	if errQuerying != nil {
-		return errQuerying
-	}
-	defer rows.Close()
-	if rows.Next() {
-		tx.Rollback() // error is not managed
+	throwaway := 1
+	row := db.QueryRow("SELECT 1 FROM ROOTS WHERE PATH = ?", toAdd)
+	if errQuerying := row.Scan(&throwaway); errQuerying != sql.ErrNoRows {
+		tx.Rollback()
 		return fmt.Errorf("Root already present (%s)", toAdd)
-	}
-	if errClosingQry := rows.Err(); errClosingQry != nil {
-		return errClosingQry
 	}
 
 	if _, errExecing := tx.Exec("INSERT INTO ROOTS (PATH) VALUES (?)", toAdd); errExecing != nil {

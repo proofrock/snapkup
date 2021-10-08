@@ -13,6 +13,7 @@ import (
 	initcmd "github.com/proofrock/snapkup/commands/init"
 	listroots "github.com/proofrock/snapkup/commands/list_roots"
 	listsnaps "github.com/proofrock/snapkup/commands/list_snaps"
+	"github.com/proofrock/snapkup/commands/restore"
 	snap "github.com/proofrock/snapkup/commands/snap"
 
 	"github.com/proofrock/snapkup/util"
@@ -21,12 +22,12 @@ import (
 const version = "v0.0.1A1"
 
 var (
-	_bkpDir = kingpin.Flag("backup-dir", "The directory to store backups into.").Required().Short('d').ExistingDir()
+	relBkpDir = kingpin.Flag("backup-dir", "The directory to store backups into.").Required().Short('d').ExistingDir()
 
 	initCmd = kingpin.Command("init", "Initializes an empty backups directory.")
 
-	addRootCmd = kingpin.Command("add-root", "Adds a new root to the pool.")
-	rootToAdd  = addRootCmd.Arg("root", "The new root to add.").Required().ExistingDir()
+	addRootCmd   = kingpin.Command("add-root", "Adds a new root to the pool.")
+	relRootToAdd = addRootCmd.Arg("root", "The new root to add.").Required().ExistingDir()
 
 	listRootsCmd = kingpin.Command("list-roots", "Lists the roots currently in the pool")
 
@@ -39,6 +40,10 @@ var (
 
 	delSnapCmd = kingpin.Command("del-snap", "Removes a snap from the pool.")
 	snapToDel  = delSnapCmd.Arg("snap", "The snap to remove.").Required().Int()
+
+	restoreCmd      = kingpin.Command("restore", "Restores a snap.")
+	snapToRestore   = restoreCmd.Arg("snap", "The snap to restore.").Required().Int()
+	relDirToRestore = restoreCmd.Arg("restore-dir", "The dir to restore into. Must exist and be empty.").Required().ExistingDir()
 )
 
 func main() {
@@ -46,30 +51,48 @@ func main() {
 
 	cliResult := kingpin.Parse()
 
-	var err error = nil
+	var errApp error = nil
 
-	if bkpDir, errAbsolutizing := filepath.Abs(*_bkpDir); errAbsolutizing != nil {
-		err = errAbsolutizing
+	if bkpDir, errAbsolutizing := filepath.Abs(*relBkpDir); errAbsolutizing != nil {
+		errApp = errAbsolutizing
 	} else {
 		switch cliResult {
+
 		case initCmd.FullCommand():
-			err = initcmd.Init(bkpDir)
+			errApp = initcmd.Init(bkpDir)
+
 		case addRootCmd.FullCommand():
-			err = addroot.AddRoot(bkpDir, rootToAdd)
+			if rootToAdd, errAbsolutizing := filepath.Abs(*relRootToAdd); errAbsolutizing != nil {
+				errApp = errAbsolutizing
+			} else {
+				errApp = addroot.AddRoot(bkpDir, rootToAdd)
+			}
+
 		case listRootsCmd.FullCommand():
-			err = listroots.ListRoots(bkpDir)
+			errApp = listroots.ListRoots(bkpDir)
+
 		case delRootCmd.FullCommand():
-			err = delroot.DelRoot(bkpDir, rootToDel)
+			errApp = delroot.DelRoot(bkpDir, *rootToDel)
+
 		case snapCmd.FullCommand():
-			err = snap.Snap(bkpDir)
+			errApp = snap.Snap(bkpDir)
+
 		case listSnapsCmd.FullCommand():
-			err = listsnaps.ListSnaps(bkpDir)
+			errApp = listsnaps.ListSnaps(bkpDir)
+
 		case delSnapCmd.FullCommand():
-			err = delsnaps.DelSnap(bkpDir, snapToDel)
+			errApp = delsnaps.DelSnap(bkpDir, *snapToDel)
+
+		case restoreCmd.FullCommand():
+			if dirToRestore, errAbsolutizing := filepath.Abs(*relDirToRestore); errAbsolutizing != nil {
+				errApp = errAbsolutizing
+			} else {
+				errApp = restore.Restore(bkpDir, *snapToRestore, dirToRestore)
+			}
 		}
 	}
 
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
+	if errApp != nil {
+		fmt.Fprintf(os.Stderr, "ERROR: %v\n", errApp)
 	}
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/proofrock/snapkup/util"
 )
 
-func DelSnap(bkpDir string, toDel *int) error {
+func DelSnap(bkpDir string, toDel int) error {
 	dbPath, errComposingDbPath := util.DbFile(bkpDir)
 	if errComposingDbPath != nil {
 		return errComposingDbPath
@@ -26,7 +26,7 @@ func DelSnap(bkpDir string, toDel *int) error {
 		return errBeginning
 	}
 
-	if res, errExecing := tx.Exec("DELETE FROM SNAPS WHERE ID = ?", *toDel); errExecing != nil {
+	if res, errExecing := tx.Exec("DELETE FROM SNAPS WHERE ID = ?", toDel); errExecing != nil {
 		tx.Rollback()
 		return errExecing
 	} else if numAffected, errCalcRowsAffected := res.RowsAffected(); errCalcRowsAffected != nil {
@@ -34,10 +34,10 @@ func DelSnap(bkpDir string, toDel *int) error {
 		return errExecing
 	} else if numAffected == 0 {
 		tx.Rollback()
-		return fmt.Errorf("Snap %d not found in pool", *toDel)
+		return fmt.Errorf("Snap %d not found in pool", toDel)
 	}
 
-	if _, errExecing := tx.Exec("DELETE FROM LNK_ITEM_SNAP WHERE SNAP = ?", *toDel); errExecing != nil {
+	if _, errExecing := tx.Exec("DELETE FROM LNK_ITEM_SNAP WHERE SNAP = ?", toDel); errExecing != nil {
 		tx.Rollback()
 		return errExecing
 	}
@@ -72,7 +72,7 @@ func DelSnap(bkpDir string, toDel *int) error {
 		return errCommitting
 	}
 
-	fmt.Printf("Snap correctly deleted (%d); %d unnecessary files deleted.\n", *toDel, numDeleted)
+	fmt.Printf("Snap correctly deleted (%d); %d unnecessary files deleted.\n", toDel, numDeleted)
 
 	return nil
 }

@@ -14,17 +14,17 @@ import (
 
 // Checked; from https://stackoverflow.com/questions/30697324/how-to-check-if-directory-on-path-is-empty
 func IsEmpty(name string) (bool, error) {
-	f, err := os.Open(name)
-	if err != nil {
-		return false, err
+	f, errOpening := os.Open(name)
+	if errOpening != nil {
+		return false, errOpening
 	}
 	defer f.Close()
 
-	_, err = f.Readdir(1)
-	if err == io.EOF {
+	_, errReadingDir := f.Readdir(1)
+	if errReadingDir == io.EOF {
 		return true, nil
 	}
-	return false, err
+	return false, errReadingDir
 }
 
 type FileNfo struct {
@@ -88,16 +88,16 @@ func FileHash(path string) (string, error) {
 	hasher := siphash.New128(nothingUpMySleeve)
 	buf := make([]byte, bufSize)
 	for {
-		n, err := source.Read(buf)
-		if err != nil && err != io.EOF {
-			return "", err
+		n, errHashingFile := source.Read(buf)
+		if errHashingFile != nil && errHashingFile != io.EOF {
+			return "", errHashingFile
 		}
 		if n == 0 {
 			break
 		}
 
-		if _, err := hasher.Write(buf[:n]); err != nil {
-			return "", err
+		if _, errWritingHash := hasher.Write(buf[:n]); errWritingHash != nil {
+			return "", errWritingHash
 		}
 	}
 
@@ -111,4 +111,30 @@ func FileHash(path string) (string, error) {
 	}
 
 	return strings.ToLower(hex.EncodeToString(ret)), nil
+}
+
+func CopyNotOverwrite(src string, dst string) error {
+	if _, errStatsing := os.Stat(dst); !os.IsNotExist(errStatsing) {
+		// an identical file already exists
+		return nil
+	}
+
+	source, errOpening := os.Open(src)
+	if errOpening != nil {
+		return errOpening
+	}
+	defer source.Close()
+
+	destination, errCreating := os.Create(dst)
+	if errCreating != nil {
+		return errCreating
+	}
+	defer destination.Close()
+
+	_, errCopying := io.Copy(destination, source)
+	if errCopying != nil {
+		return errCopying
+	}
+
+	return nil
 }

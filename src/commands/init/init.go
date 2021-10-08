@@ -38,8 +38,8 @@ var sqls = [4]string{
 }
 
 func Init(bkpDir string) error {
-	if isEmpty, err := util.IsEmpty(bkpDir); err != nil {
-		return err
+	if isEmpty, errCheckingEmpty := util.IsEmpty(bkpDir); errCheckingEmpty != nil {
+		return errCheckingEmpty
 	} else if !isEmpty {
 		return fmt.Errorf("Backup dir is not empty (%s)", bkpDir)
 	}
