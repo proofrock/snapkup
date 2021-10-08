@@ -3,8 +3,10 @@ package restore
 import (
 	"database/sql"
 	"fmt"
+	"io/fs"
 	"os"
 	"path"
+	"time"
 
 	"github.com/proofrock/snapkup/util"
 )
@@ -19,7 +21,7 @@ SELECT PATH, HASH, MODE, MOD_TIME
 type item struct {
 	Path    string
 	Hash    string
-	Mode    string
+	Mode    uint32
 	ModTime int64
 }
 
@@ -84,7 +86,12 @@ func Restore(bkpDir string, snap int, restoreDir string) error {
 				return errCopying
 			}
 
-			// TODO set file mode and mod time
+			if errChmod := os.Chmod(dest, fs.FileMode(item.Mode)); errChmod != nil {
+				return errChmod
+			}
+			if errChtimes := os.Chtimes(dest, time.Unix(item.ModTime, 0), time.Unix(item.ModTime, 0)); errChtimes != nil {
+				return errChtimes
+			}
 		}
 	}
 

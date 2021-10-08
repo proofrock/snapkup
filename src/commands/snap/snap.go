@@ -92,7 +92,7 @@ func Snap(bkpDir string) error {
 			return err1
 		}
 
-		_, err3 := st3tx.Exec(uidToSet, snap, file.Mode.String(), file.LastModified)
+		_, err3 := st3tx.Exec(uidToSet, snap, uint32(file.Mode), file.LastModified)
 		if err3 != nil {
 			tx.Rollback()
 			return err3
