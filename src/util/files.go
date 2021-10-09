@@ -39,37 +39,56 @@ type FileNfo struct {
 
 func WalkFSTree(roots []string) (files []FileNfo, numFiles int, numDirs int) {
 	for _, root := range roots {
-		filepath.Walk(root, func(path string, f os.FileInfo, errWalking error) error {
-			if errWalking != nil {
-				fmt.Fprintf(os.Stderr, "Error walking fs tree: %v\n", errWalking)
-			} else {
-				var hash string
-				var isDir int
-				if f.IsDir() {
-					numDirs++
-					isDir = 1
+		if froot, errStatsing := os.Stat(root); errStatsing != nil {
+			fmt.Fprintf(os.Stderr, "Error in Stat() of root: %v\n", errStatsing)
+		} else if froot.IsDir() {
+			filepath.Walk(root, func(path string, f os.FileInfo, errWalking error) error {
+				if errWalking != nil {
+					fmt.Fprintf(os.Stderr, "Error walking fs tree: %v\n", errWalking)
 				} else {
-					numFiles++
-					isDir = 0
-					if _hash, errHashing := FileHash(path); errHashing != nil {
-						fmt.Fprintf(os.Stderr, "Error walking fs tree: %v\n", errWalking)
+					var hash string
+					var isDir int
+					if f.IsDir() {
+						numDirs++
+						isDir = 1
 					} else {
-						hash = _hash
+						numFiles++
+						isDir = 0
+						if _hash, errHashing := FileHash(path); errHashing != nil {
+							fmt.Fprintf(os.Stderr, "Error hashing file: %v\n", errHashing)
+						} else {
+							hash = _hash
+						}
 					}
-				}
 
+					files = append(files, FileNfo{
+						IsDir:        isDir,
+						FullPath:     path,
+						Hash:         hash,
+						Name:         f.Name(),
+						Size:         f.Size(),
+						LastModified: f.ModTime().Unix(),
+						Mode:         f.Mode(),
+					})
+				}
+				return nil
+			})
+		} else {
+			if hash, errHashing := FileHash(root); errHashing != nil {
+				fmt.Fprintf(os.Stderr, "Error hashing file: %v\n", errHashing)
+			} else {
 				files = append(files, FileNfo{
-					IsDir:        isDir,
-					FullPath:     path,
+					IsDir:        0,
+					FullPath:     root,
 					Hash:         hash,
-					Name:         f.Name(),
-					Size:         f.Size(),
-					LastModified: f.ModTime().Unix(),
-					Mode:         f.Mode(),
+					Name:         froot.Name(),
+					Size:         froot.Size(),
+					LastModified: froot.ModTime().Unix(),
+					Mode:         froot.Mode(),
 				})
+				numFiles = 1
 			}
-			return nil
-		})
+		}
 	}
 
 	return

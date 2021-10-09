@@ -27,7 +27,7 @@ var (
 	initCmd = kingpin.Command("init", "Initializes an empty backups directory.")
 
 	addRootCmd   = kingpin.Command("add-root", "Adds a new root to the pool.")
-	relRootToAdd = addRootCmd.Arg("root", "The new root to add.").Required().ExistingDir()
+	relRootToAdd = addRootCmd.Arg("root", "The new root to add.").Required().ExistingFileOrDir()
 
 	listRootsCmd = kingpin.Command("list-roots", "Lists the roots currently in the pool")
 
