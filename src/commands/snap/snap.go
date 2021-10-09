@@ -10,7 +10,7 @@ import (
 	"github.com/proofrock/snapkup/util"
 )
 
-func Snap(bkpDir string) error {
+func Snap(bkpDir string, compress bool) error {
 	dbPath, errComposingDbPath := util.DbFile(bkpDir)
 	if errComposingDbPath != nil {
 		return errComposingDbPath
@@ -27,7 +27,7 @@ func Snap(bkpDir string) error {
 		return errSt1
 	}
 	defer st1.Close()
-	st2, errSt2 := db.Prepare("INSERT INTO ITEMS (PATH, HASH, IS_DIR, UID) VALUES (?, ?, ?, ?)")
+	st2, errSt2 := db.Prepare("INSERT INTO ITEMS (PATH, HASH, SIZE, IS_DIR, UID) VALUES (?, ?, ?, ?, ?)")
 	if errSt2 != nil {
 		return errSt2
 	}
@@ -82,7 +82,7 @@ func Snap(bkpDir string) error {
 			uidToSet = uid
 			uid++
 			newFiles = append(newFiles, file)
-			_, err2 := st2tx.Exec(file.FullPath, file.Hash, file.IsDir, uidToSet)
+			_, err2 := st2tx.Exec(file.FullPath, file.Hash, file.Size, file.IsDir, uidToSet)
 			if err2 != nil {
 				tx.Rollback()
 				return err2
@@ -106,9 +106,10 @@ func Snap(bkpDir string) error {
 			continue
 		}
 
-		pathDest := path.Join(bkpDir, file.Hash)
+		pathDest := path.Join(bkpDir, file.Hash[0:2], file.Hash[2:])
+		println(pathDest)
 
-		if errCopying := util.CopyNotOverwrite(file.FullPath, pathDest); errCopying != nil {
+		if errCopying := util.Store(file.FullPath, pathDest, compress); errCopying != nil {
 			tx.Rollback()
 			return errCopying
 		}

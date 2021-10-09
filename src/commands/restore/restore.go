@@ -6,21 +6,23 @@ import (
 	"io/fs"
 	"os"
 	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/proofrock/snapkup/util"
 )
 
 const sql1 = `
-SELECT PATH, HASH, MODE, MOD_TIME
+SELECT i.PATH, i.HASH, i.SIZE, lis.MODE, lis.MOD_TIME
   FROM ITEMS i
   JOIN LNK_ITEM_SNAP lis ON lis.UID = i.UID
  WHERE lis.SNAP = ?
- ORDER BY PATH ASC`
+ ORDER BY i.PATH ASC`
 
 type item struct {
 	Path    string
 	Hash    string
+	Size    int64
 	Mode    uint32
 	ModTime int64
 }
@@ -54,7 +56,7 @@ func Restore(bkpDir string, snap int, restoreDir string) error {
 		defer rows.Close()
 		for rows.Next() {
 			var item item
-			if errScanning := rows.Scan(&item.Path, &item.Hash, &item.Mode, &item.ModTime); errScanning != nil {
+			if errScanning := rows.Scan(&item.Path, &item.Hash, &item.Size, &item.Mode, &item.ModTime); errScanning != nil {
 				return errScanning
 			}
 
@@ -76,13 +78,16 @@ func Restore(bkpDir string, snap int, restoreDir string) error {
 	for _, item := range items {
 		dest := path.Join(restoreDir, item.Path)
 		if item.Hash == "" {
-			// it's a dir
-			os.MkdirAll(dest, os.ModePerm)
+			// it's a dir. Ignored.
 		} else {
 			// it's a file
-			source := path.Join(bkpDir, item.Hash)
+			source := path.Join(bkpDir, item.Hash[0:2], item.Hash[2:])
 
-			if errCopying := util.CopyNotOverwrite(source, dest); errCopying != nil {
+			if errMkingDir := os.MkdirAll(filepath.Dir(dest), os.FileMode(0700)); errMkingDir != nil {
+				return errMkingDir
+			}
+
+			if errCopying := util.Restore(source, dest, item.Size); errCopying != nil {
 				return errCopying
 			}
 

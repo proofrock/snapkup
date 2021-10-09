@@ -34,7 +34,8 @@ var (
 	delRootCmd = kingpin.Command("del-root", "Removes a root from the pool.")
 	rootToDel  = delRootCmd.Arg("root", "The root to remove.").Required().String()
 
-	snapCmd = kingpin.Command("snap", "Takes a new snapshot of the roots.")
+	snapCmd      = kingpin.Command("snap", "Takes a new snapshot of the roots.")
+	snapCompress = kingpin.Flag("compress", "Compresses the stored files.").Short('z').Bool()
 
 	listSnapsCmd = kingpin.Command("list-snaps", "Lists the snaps currently in the pool")
 
@@ -73,7 +74,7 @@ func app() (errApp error) {
 			errApp = delroot.DelRoot(bkpDir, *rootToDel)
 
 		case snapCmd.FullCommand():
-			errApp = snap.Snap(bkpDir)
+			errApp = snap.Snap(bkpDir, *snapCompress)
 
 		case listSnapsCmd.FullCommand():
 			errApp = listsnaps.ListSnaps(bkpDir)

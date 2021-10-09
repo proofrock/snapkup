@@ -3,6 +3,9 @@ package init
 import (
 	"database/sql"
 	"fmt"
+	"io/fs"
+	"os"
+	"path"
 
 	_ "github.com/mattn/go-sqlite3"
 
@@ -18,6 +21,7 @@ var sqls = [4]string{
 	`CREATE TABLE "ITEMS" (
 		"PATH"		TEXT NOT NULL,
 		"HASH"		TEXT NOT NULL,
+		"SIZE"		INTEGER NOT NULL,
 		"IS_DIR"	INTEGER NOT NULL,
 		"UID"		INTEGER NOT NULL UNIQUE,
 		PRIMARY KEY("PATH", "HASH")
@@ -37,6 +41,8 @@ var sqls = [4]string{
 	)`,
 }
 
+const hex = "0123456789abcdef"
+
 func Init(bkpDir string) error {
 	if isEmpty, errCheckingEmpty := util.IsEmpty(bkpDir); errCheckingEmpty != nil {
 		return errCheckingEmpty
@@ -44,7 +50,7 @@ func Init(bkpDir string) error {
 		return fmt.Errorf("Backup dir is not empty (%s)", bkpDir)
 	}
 
-	dbPath := bkpDir + "/" + util.DbFileName
+	dbPath := path.Join(bkpDir, util.DbFileName)
 
 	db, errOpeningDb := sql.Open("sqlite3", dbPath)
 	if errOpeningDb != nil {
@@ -66,6 +72,12 @@ func Init(bkpDir string) error {
 
 	if errCommitting := tx.Commit(); errCommitting != nil {
 		return errCommitting
+	}
+
+	for i := 0; i < 16; i++ {
+		for j := 0; j < 16; j++ {
+			os.Mkdir(path.Join(bkpDir, hex[i:i+1]+hex[j:j+1]), fs.FileMode(0700))
+		}
 	}
 
 	println("Backup directory correctly initialized in ", bkpDir)

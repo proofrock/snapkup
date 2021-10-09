@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/DataDog/zstd"
 	"github.com/dchest/siphash"
 )
 
@@ -95,6 +96,7 @@ func WalkFSTree(roots []string) (files []FileNfo, numFiles int, numDirs int) {
 }
 
 const bufSize = 1024 * 32 // 32Kb
+
 var nothingUpMySleeve = []byte("SnapkupIsCool!!!")
 
 func FileHash(path string) (string, error) {
@@ -132,12 +134,7 @@ func FileHash(path string) (string, error) {
 	return strings.ToLower(hex.EncodeToString(ret)), nil
 }
 
-func CopyNotOverwrite(src string, dst string) error {
-	if _, errStatsing := os.Stat(dst); !os.IsNotExist(errStatsing) {
-		// an identical file already exists
-		return nil
-	}
-
+func simpleCopy(src string, dst string) error {
 	source, errOpening := os.Open(src)
 	if errOpening != nil {
 		return errOpening
@@ -151,6 +148,108 @@ func CopyNotOverwrite(src string, dst string) error {
 	defer destination.Close()
 
 	_, errCopying := io.Copy(destination, source)
+	if errCopying != nil {
+		return errCopying
+	}
+
+	return nil
+}
+
+func Store(src string, dst string, compress bool) error {
+	if _, errStatsing := os.Stat(dst); os.IsNotExist(errStatsing) {
+		// alles gut
+	} else if errStatsing != nil {
+		return errStatsing
+	} else {
+		// an identical file already exists
+		return nil
+	}
+
+	if compress {
+		var sourceSize int64
+		{
+			source, errOpening := os.Open(src)
+			if errOpening != nil {
+				return errOpening
+			}
+			defer source.Close()
+
+			destination, errCreating := os.Create(dst)
+			if errCreating != nil {
+				return errCreating
+			}
+			defer destination.Close()
+
+			zDestination := zstd.NewWriterLevel(destination, 9)
+			defer zDestination.Close()
+
+			if _sourceLen, errCopyingStreams := io.Copy(zDestination, source); errCopyingStreams != nil {
+				return errCopyingStreams
+			} else {
+				sourceSize = _sourceLen
+			}
+
+			zDestination.Flush()
+		}
+
+		fDest, errStatsing := os.Stat(dst)
+		if errStatsing != nil {
+			return errStatsing
+		}
+
+		if fDest.Size() < sourceSize {
+			return nil // OK, compressed file is smaller than source
+		}
+
+		// I delete the compressed file and copy the original
+		if errRemoving := os.Remove(dst); errRemoving != nil {
+			return errRemoving
+		}
+	}
+
+	if errCopying := simpleCopy(src, dst); errCopying != nil {
+		return errCopying
+	}
+
+	return nil
+}
+
+func Restore(src string, dst string, origSize int64) error {
+	if _, errStatsing := os.Stat(dst); !os.IsNotExist(errStatsing) {
+		// an identical file already exists
+		return nil
+	}
+
+	fSrc, errStatsing := os.Stat(src)
+	if errStatsing != nil {
+		return errStatsing
+	}
+
+	if fSrc.Size() == origSize {
+		// it's not compressed. Simply copy and return.
+		if errCopying := simpleCopy(src, dst); errCopying != nil {
+			return errCopying
+		}
+
+		return nil
+	}
+
+	source, errOpening := os.Open(src)
+	if errOpening != nil {
+		return errOpening
+	}
+	defer source.Close()
+
+	zSource := zstd.NewReader(source)
+	defer zSource.Close()
+
+	destination, errCreating := os.Create(dst)
+	if errCreating != nil {
+		return errCreating
+	}
+	defer destination.Close()
+
+	_, errCopying := io.Copy(destination, zSource)
 	if errCopying != nil {
 		return errCopying
 	}
