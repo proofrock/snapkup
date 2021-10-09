@@ -46,12 +46,10 @@ var (
 	relDirToRestore = restoreCmd.Arg("restore-dir", "The dir to restore into. Must exist and be empty.").Required().ExistingDir()
 )
 
-func main() {
+func app() (errApp error) {
 	kingpin.Version(util.Banner(version))
 
 	cliResult := kingpin.Parse()
-
-	var errApp error = nil
 
 	if bkpDir, errAbsolutizing := filepath.Abs(*relBkpDir); errAbsolutizing != nil {
 		errApp = errAbsolutizing
@@ -92,7 +90,12 @@ func main() {
 		}
 	}
 
-	if errApp != nil {
+	return errApp
+}
+
+func main() {
+	if errApp := app(); errApp != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: %v\n", errApp)
+		os.Exit(1)
 	}
 }
