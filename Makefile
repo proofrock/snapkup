@@ -13,3 +13,7 @@ build:
 	make build-prepare
 	cd src; go build -o snapkup; strip snapkup
 	mv src/snapkup bin/
+
+zbuild:
+	make build
+	upx --lzma bin/snapkup 
