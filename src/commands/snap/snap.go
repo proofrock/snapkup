@@ -107,7 +107,6 @@ func Snap(bkpDir string, compress bool) error {
 		}
 
 		pathDest := path.Join(bkpDir, file.Hash[0:2], file.Hash[2:])
-		println(pathDest)
 
 		if errCopying := util.Store(file.FullPath, pathDest, compress); errCopying != nil {
 			tx.Rollback()
