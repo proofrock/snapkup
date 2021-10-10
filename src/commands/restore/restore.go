@@ -77,9 +77,7 @@ func Restore(bkpDir string, snap int, restoreDir string) error {
 
 	for _, item := range items {
 		dest := path.Join(restoreDir, item.Path)
-		if item.Hash == "" {
-			// it's a dir. Ignored.
-		} else {
+		if item.Hash != "" {
 			// it's a file
 			source := path.Join(bkpDir, item.Hash[0:2], item.Hash[2:])
 
@@ -90,13 +88,19 @@ func Restore(bkpDir string, snap int, restoreDir string) error {
 			if errCopying := util.Restore(source, dest, item.Size); errCopying != nil {
 				return errCopying
 			}
+		}
+	}
 
-			if errChmod := os.Chmod(dest, fs.FileMode(item.Mode)); errChmod != nil {
-				return errChmod
-			}
-			if errChtimes := os.Chtimes(dest, time.Unix(item.ModTime, 0), time.Unix(item.ModTime, 0)); errChtimes != nil {
-				return errChtimes
-			}
+	for _, item := range items {
+		dest := path.Join(restoreDir, item.Path)
+
+		if errChmod := os.Chmod(dest, fs.FileMode(item.Mode)); errChmod != nil {
+			return errChmod
+		}
+
+		modTime := time.Unix(item.ModTime, 0)
+		if errChtimes := os.Chtimes(dest, modTime, modTime); errChtimes != nil {
+			return errChtimes
 		}
 	}
 
