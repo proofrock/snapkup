@@ -45,7 +45,7 @@ We will backup the contents of the `C:\MyImportantDir`, using the `C:\MySnapkupD
 
 `snapkup.exe -d C:\MySnapkupDir restore 0 C:\MyRestoreDir`
 
-*the destination should be empty*
+*the destination directory should be empty.*
 
 ## Status
 
