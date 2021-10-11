@@ -19,9 +19,37 @@ Snapkup's goal is to store efficiently one or more filesystem's situation at giv
 
 All paths are converted to absolute paths, for consistency.
 
+## Mini-tutorial
+
+We will backup the contents of the `C:\MyImportantDir`, using the `C:\MySnapkupDir` folder as the container of the backup structures. This example is styled after windows, but it's completely similar under UNIXes.
+
+### Initialize the backup directory
+
+`snapkup.exe -d C:\MySnapkupDir init`
+
+### Register the directory to backup as a root
+
+`snapkup.exe -d C:\MySnapkupDir add-root C:\MyImportantDir`
+
+### Take your first snapshot
+
+`snapkup.exe -d C:\MySnapkupDir snap`
+
+*add `-z` if you want to compress the files being backed up*.
+
+### Delete it, because... just because.
+
+`snapkup.exe -d C:\MySnapkupDir del-snap 0`
+
+### Or restore it!
+
+`snapkup.exe -d C:\MySnapkupDir restore 0 C:\MyRestoreDir`
+
+*the destination should be empty*
+
 ## Status
 
-Everything described above should work, more or less. **It's still at an early stage of development, so don't trust it with any critical data, yet**. 
+Everything described above should work. **It's still at an early stage of development, so don't trust it with any critical data, yet**. 
 
 Next steps:
 
@@ -29,6 +57,8 @@ Next steps:
 - Improved documentation
 - Mounting a snapshot as a FUSE filesystem
 - Proper cross-compiling
+- Better error handling
+- Better recovery of the data structures from errors
 
 ## Build
 
