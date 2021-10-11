@@ -166,49 +166,30 @@ func Store(src string, dst string, compress bool) error {
 	}
 
 	if compress {
-		var sourceSize int64
-		{
-			source, errOpening := os.Open(src)
-			if errOpening != nil {
-				return errOpening
-			}
-			defer source.Close()
+		source, errOpening := os.Open(src)
+		if errOpening != nil {
+			return errOpening
+		}
+		defer source.Close()
 
-			destination, errCreating := os.Create(dst)
-			if errCreating != nil {
-				return errCreating
-			}
-			defer destination.Close()
+		destination, errCreating := os.Create(dst)
+		if errCreating != nil {
+			return errCreating
+		}
+		defer destination.Close()
 
-			zDestination := zstd.NewWriterLevel(destination, 9)
-			defer zDestination.Close()
+		zDestination := zstd.NewWriterLevel(destination, 9)
+		defer zDestination.Close()
 
-			if _sourceLen, errCopyingStreams := io.Copy(zDestination, source); errCopyingStreams != nil {
-				return errCopyingStreams
-			} else {
-				sourceSize = _sourceLen
-			}
-
-			zDestination.Flush()
+		if _, errCopyingStreams := io.Copy(zDestination, source); errCopyingStreams != nil {
+			return errCopyingStreams
 		}
 
-		fDest, errStatsing := os.Stat(dst)
-		if errStatsing != nil {
-			return errStatsing
+		zDestination.Flush()
+	} else {
+		if errCopying := simpleCopy(src, dst); errCopying != nil {
+			return errCopying
 		}
-
-		if fDest.Size() < sourceSize {
-			return nil // OK, compressed file is smaller than source
-		}
-
-		// I delete the compressed file and copy the original
-		if errRemoving := os.Remove(dst); errRemoving != nil {
-			return errRemoving
-		}
-	}
-
-	if errCopying := simpleCopy(src, dst); errCopying != nil {
-		return errCopying
 	}
 
 	return nil
