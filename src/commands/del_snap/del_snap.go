@@ -37,13 +37,13 @@ func DelSnap(bkpDir string, toDel int) error {
 		return fmt.Errorf("Snap %d not found in pool", toDel)
 	}
 
-	if _, errExecing := tx.Exec("DELETE FROM LNK_ITEM_SNAP WHERE SNAP = ?", toDel); errExecing != nil {
+	if _, errExecing := tx.Exec("DELETE FROM ITEMS WHERE SNAP = ?", toDel); errExecing != nil {
 		tx.Rollback()
 		return errExecing
 	}
 
 	numDeleted := 0
-	rows, errQuerying := tx.Query("SELECT DISTINCT(HASH) FROM ITEMS WHERE HASH != '' AND UID NOT IN (SELECT UID FROM LNK_ITEM_SNAP)")
+	rows, errQuerying := tx.Query("SELECT HASH FROM BLOBS WHERE HASH NOT IN (SELECT HASH FROM ITEMS)")
 	if errQuerying != nil {
 		return errQuerying
 	}
@@ -63,7 +63,7 @@ func DelSnap(bkpDir string, toDel int) error {
 		return errClosingQry
 	}
 
-	if _, errExecing := tx.Exec("DELETE FROM ITEMS WHERE UID NOT IN (SELECT UID FROM LNK_ITEM_SNAP)"); errExecing != nil {
+	if _, errExecing := tx.Exec("DELETE FROM BLOBS WHERE HASH NOT IN (SELECT HASH FROM ITEMS)"); errExecing != nil {
 		tx.Rollback()
 		return errExecing
 	}

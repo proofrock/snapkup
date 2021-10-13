@@ -13,18 +13,18 @@ import (
 )
 
 const sql1 = `
-SELECT i.PATH, i.HASH, i.SIZE, lis.MODE, lis.MOD_TIME
+SELECT i.PATH, i.HASH, b.IS_COMPRESSED, i.MODE, i.MOD_TIME
   FROM ITEMS i
-  JOIN LNK_ITEM_SNAP lis ON lis.UID = i.UID
- WHERE lis.SNAP = ?
+  JOIN BLOBS b ON b.HASH = i.HASH
+ WHERE i.SNAP = ?
  ORDER BY i.PATH ASC`
 
 type item struct {
-	Path    string
-	Hash    string
-	Size    int64
-	Mode    uint32
-	ModTime int64
+	Path         string
+	Hash         string
+	IsCompressed int
+	Mode         uint32
+	ModTime      int64
 }
 
 func Restore(bkpDir string, snap int, restoreDir string) error {
@@ -56,7 +56,7 @@ func Restore(bkpDir string, snap int, restoreDir string) error {
 		defer rows.Close()
 		for rows.Next() {
 			var item item
-			if errScanning := rows.Scan(&item.Path, &item.Hash, &item.Size, &item.Mode, &item.ModTime); errScanning != nil {
+			if errScanning := rows.Scan(&item.Path, &item.Hash, &item.IsCompressed, &item.Mode, &item.ModTime); errScanning != nil {
 				return errScanning
 			}
 
@@ -85,7 +85,7 @@ func Restore(bkpDir string, snap int, restoreDir string) error {
 				return errMkingDir
 			}
 
-			if errCopying := util.Restore(source, dest, item.Size); errCopying != nil {
+			if errCopying := util.Restore(source, dest, item.IsCompressed == 1); errCopying != nil {
 				return errCopying
 			}
 		}

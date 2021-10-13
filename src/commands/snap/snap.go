@@ -22,17 +22,17 @@ func Snap(bkpDir string, compress bool) error {
 	}
 	defer db.Close()
 
-	st1, errSt1 := db.Prepare("SELECT UID FROM ITEMS WHERE PATH = ? AND HASH = ?")
+	st1, errSt1 := db.Prepare("INSERT INTO ITEMS (PATH, SNAP, HASH, IS_DIR, MODE, MOD_TIME) VALUES (?, ?, ?, ?, ?, ?)")
 	if errSt1 != nil {
 		return errSt1
 	}
 	defer st1.Close()
-	st2, errSt2 := db.Prepare("INSERT INTO ITEMS (PATH, HASH, SIZE, IS_DIR, UID) VALUES (?, ?, ?, ?, ?)")
+	st2, errSt2 := db.Prepare("SELECT 1 FROM BLOBS WHERE HASH = ?")
 	if errSt2 != nil {
 		return errSt2
 	}
 	defer st2.Close()
-	st3, errSt3 := db.Prepare("INSERT INTO LNK_ITEM_SNAP (UID, SNAP, MODE, MOD_TIME) VALUES (?, ?, ?, ?)")
+	st3, errSt3 := db.Prepare("INSERT INTO BLOBS (HASH, SIZE, BLOB_SIZE, IS_COMPRESSED, IS_ENCRYPTED) VALUES (?, ?, ?, ?, ?)")
 	if errSt3 != nil {
 		return errSt3
 	}
@@ -60,12 +60,6 @@ func Snap(bkpDir string, compress bool) error {
 		return errRecSnap
 	}
 
-	uid, errGetMaxUID := getMaxUID(tx)
-	if errGetMaxUID != nil {
-		tx.Rollback()
-		return errGetMaxUID
-	}
-
 	st1tx := tx.Stmt(st1)
 	defer st1tx.Close()
 	st2tx := tx.Stmt(st2)
@@ -73,44 +67,60 @@ func Snap(bkpDir string, compress bool) error {
 	st3tx := tx.Stmt(st3)
 	defer st3tx.Close()
 
-	var newFiles []util.FileNfo
+	// Iterates over the items (files+dirs) found in the filesystem. Write them for
+	// the new snap ID, and check if the corresponding blob is a duplicate of something
+	// seen in the current scan, or from a previous scan. If so, the writing that
+	// is performed is enough to create a reference.
+	// In the end, the map newHashes contains the hashes that needs to be stored as a blob
+
+	type finf struct {
+		FullPath string
+		Size     int64
+	}
+
+	newHashes := make(map[string]finf) // [hash]file_info
 	for _, file := range files {
-		var uidToSet int
-		row := st1tx.QueryRow(file.FullPath, file.Hash)
-		if err1 := row.Scan(&uidToSet); err1 == sql.ErrNoRows {
-			// new item
-			uidToSet = uid
-			uid++
-			newFiles = append(newFiles, file)
-			_, err2 := st2tx.Exec(file.FullPath, file.Hash, file.Size, file.IsDir, uidToSet)
-			if err2 != nil {
-				tx.Rollback()
-				return err2
-			}
-		} else if err1 != nil {
+		if _, errInsertingItem := st1tx.Exec(file.FullPath, snap, file.Hash, file.IsDir, file.Mode, file.LastModified); errInsertingItem != nil {
 			tx.Rollback()
-			return err1
+			return errInsertingItem
 		}
 
-		_, err3 := st3tx.Exec(uidToSet, snap, uint32(file.Mode), file.LastModified)
-		if err3 != nil {
-			tx.Rollback()
-			return err3
+		if file.IsDir == 0 {
+			if _, alreadySeen := newHashes[file.Hash]; !alreadySeen {
+				//check if the hash is already in the blobs
+				throwaway := 1
+				row := st2tx.QueryRow(file.Hash)
+				if errQuerying := row.Scan(&throwaway); errQuerying == sql.ErrNoRows {
+					// hash not yet recorded, mark it for addition
+					newHashes[file.Hash] = finf{file.FullPath, file.Size}
+				} else if errQuerying != nil {
+					tx.Rollback()
+					return errQuerying
+				}
+			}
 		}
 	}
 
-	fmt.Printf("%d new items and %d already present.\n", len(newFiles), len(files)-len(newFiles))
+	fmt.Printf("%d new blobs to write\n", len(newHashes))
 
-	for _, file := range newFiles {
-		if file.IsDir == 1 {
-			continue
-		}
+	// Iterates over the blobs to write, and writes them (compressing or not)
+	for hash, finfo := range newHashes {
+		pathDest := path.Join(bkpDir, hash[0:2], hash[2:])
 
-		pathDest := path.Join(bkpDir, file.Hash[0:2], file.Hash[2:])
-
-		if errCopying := util.Store(file.FullPath, pathDest, compress); errCopying != nil {
+		blobSize, errCopying := util.Store(finfo.FullPath, pathDest, compress)
+		if errCopying != nil {
 			tx.Rollback()
 			return errCopying
+		}
+
+		iCompressed := 0
+		if compress {
+			iCompressed = 1
+		}
+
+		if _, errInsertingBlob := st3tx.Exec(hash, finfo.Size, blobSize, iCompressed, 0); errInsertingBlob != nil {
+			tx.Rollback()
+			return errInsertingBlob
 		}
 	}
 
@@ -130,11 +140,5 @@ func recNewSnap(tx *sql.Tx) (nuSnap int, errNewSnap error) {
 		return
 	}
 	_, errNewSnap = tx.Exec("INSERT INTO SNAPS (ID, TIMESTAMP) VALUES (?, ?)", nuSnap, time.Now().UnixMilli())
-	return
-}
-
-func getMaxUID(tx *sql.Tx) (uid int, errGetMaxUID error) {
-	row := tx.QueryRow("SELECT COALESCE(MAX(UID) + 1, 0) FROM ITEMS")
-	errGetMaxUID = row.Scan(&uid)
 	return
 }

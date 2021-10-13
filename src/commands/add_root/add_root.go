@@ -27,9 +27,12 @@ func AddRoot(bkpDir string, toAdd string) error {
 	// TODO QueryOnce
 	throwaway := 1
 	row := db.QueryRow("SELECT 1 FROM ROOTS WHERE PATH = ?", toAdd)
-	if errQuerying := row.Scan(&throwaway); errQuerying != sql.ErrNoRows {
+	if errQuerying := row.Scan(&throwaway); errQuerying == nil {
 		tx.Rollback()
 		return fmt.Errorf("Root already present (%s)", toAdd)
+	} else if errQuerying != sql.ErrNoRows {
+		tx.Rollback()
+		return errQuerying
 	}
 
 	if _, errExecing := tx.Exec("INSERT INTO ROOTS (PATH) VALUES (?)", toAdd); errExecing != nil {

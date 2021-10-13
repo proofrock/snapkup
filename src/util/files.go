@@ -29,8 +29,8 @@ func IsEmpty(name string) (bool, error) {
 }
 
 type FileNfo struct {
-	IsDir        int
 	FullPath     string
+	IsDir        int
 	Hash         string
 	Name         string
 	Size         int64
@@ -155,26 +155,19 @@ func simpleCopy(src string, dst string) error {
 	return nil
 }
 
-func Store(src string, dst string, compress bool) error {
-	if _, errStatsing := os.Stat(dst); os.IsNotExist(errStatsing) {
-		// alles gut
-	} else if errStatsing != nil {
-		return errStatsing
-	} else {
-		// an identical file already exists
-		return nil
-	}
-
+func Store(src string, dst string, compress bool) (blobSize int64, err error) {
 	if compress {
 		source, errOpening := os.Open(src)
 		if errOpening != nil {
-			return errOpening
+			err = errOpening
+			return
 		}
 		defer source.Close()
 
 		destination, errCreating := os.Create(dst)
 		if errCreating != nil {
-			return errCreating
+			err = errCreating
+			return
 		}
 		defer destination.Close()
 
@@ -182,31 +175,31 @@ func Store(src string, dst string, compress bool) error {
 		defer zDestination.Close()
 
 		if _, errCopyingStreams := io.Copy(zDestination, source); errCopyingStreams != nil {
-			return errCopyingStreams
+			err = errCopyingStreams
+			return
 		}
 
 		zDestination.Flush()
 	} else {
 		if errCopying := simpleCopy(src, dst); errCopying != nil {
-			return errCopying
+			err = errCopying
+			return
 		}
 	}
 
-	return nil
+	stat, _ := os.Stat(dst)
+	blobSize = stat.Size()
+
+	return
 }
 
-func Restore(src string, dst string, origSize int64) error {
+func Restore(src string, dst string, isCompressed bool) error {
 	if _, errStatsing := os.Stat(dst); !os.IsNotExist(errStatsing) {
 		// an identical file already exists
 		return nil
 	}
 
-	fSrc, errStatsing := os.Stat(src)
-	if errStatsing != nil {
-		return errStatsing
-	}
-
-	if fSrc.Size() == origSize {
+	if !isCompressed {
 		// it's not compressed. Simply copy and return.
 		if errCopying := simpleCopy(src, dst); errCopying != nil {
 			return errCopying
