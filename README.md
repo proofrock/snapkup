@@ -10,7 +10,7 @@ Snapkup's goal is to store efficiently one or more filesystem's situation at giv
 - You register one or more backup roots, directory or files that will be snapshotted
 - You take one or more snapshots. Snapkup lists all the tree for those roots, taking a snapshot of the contents
     - All the files in the roots are deduplicated, and only the files that are different are stored
-    - All files that can be compressed are stored as such, using  `zstd -9`
+    - It's possible to compress the files, using  `zstd -9`
     - Files are stored in an efficient manner, with a shallow directory structure.
 - You can restore the situation of the roots at a given snapshot, later on
     - Files' and dirs' mode and modification time are preserved
@@ -37,6 +37,18 @@ We will backup the contents of the `C:\MyImportantDir`, using the `C:\MySnapkupD
 
 *add `-z` if you want to compress the files being backed up*.
 
+### Get info on a snapshot
+
+`snapkup.exe -d C:\MySnapkupDir info-snap 0`
+
+*gives info like: number of files, number of dirs, size, and how much space on backup filesystem will be freed if this snap is deleted.*
+
+### Get the file list on a snapshot
+
+`snapkup.exe -d C:\MySnapkupDir list-snap 0`
+
+*prints a list of the directories and files for a snap.*
+
 ### Delete it, because... just because.
 
 `snapkup.exe -d C:\MySnapkupDir del-snap 0`
@@ -45,7 +57,9 @@ We will backup the contents of the `C:\MyImportantDir`, using the `C:\MySnapkupD
 
 `snapkup.exe -d C:\MySnapkupDir restore 0 C:\MyRestoreDir`
 
-*the destination directory should be empty.*
+*the destination directory must be empty. It is also possible to specify a prefix path to select only a part of the file list:*
+
+`snapkup.exe -d C:\MySnapkupDir restore 0 C:\MyRestoreDir --prefix-path /foo/bar`
 
 ## Status
 

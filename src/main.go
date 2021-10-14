@@ -10,8 +10,10 @@ import (
 	addroot "github.com/proofrock/snapkup/commands/add_root"
 	delroot "github.com/proofrock/snapkup/commands/del_root"
 	delsnaps "github.com/proofrock/snapkup/commands/del_snap"
+	"github.com/proofrock/snapkup/commands/info_snap"
 	initcmd "github.com/proofrock/snapkup/commands/init"
 	listroots "github.com/proofrock/snapkup/commands/list_roots"
+	"github.com/proofrock/snapkup/commands/list_snap"
 	listsnaps "github.com/proofrock/snapkup/commands/list_snaps"
 	"github.com/proofrock/snapkup/commands/restore"
 	snap "github.com/proofrock/snapkup/commands/snap"
@@ -35,16 +37,23 @@ var (
 	rootToDel  = delRootCmd.Arg("root", "The root to remove.").Required().String()
 
 	snapCmd      = kingpin.Command("snap", "Takes a new snapshot of the roots.")
-	snapCompress = kingpin.Flag("compress", "Compresses the stored files.").Short('z').Bool()
+	snapCompress = snapCmd.Flag("compress", "Compresses the stored files.").Short('z').Bool()
 
 	listSnapsCmd = kingpin.Command("list-snaps", "Lists the snaps currently in the pool")
 
 	delSnapCmd = kingpin.Command("del-snap", "Removes a snap from the pool.")
 	snapToDel  = delSnapCmd.Arg("snap", "The snap to remove.").Required().Int()
 
-	restoreCmd      = kingpin.Command("restore", "Restores a snap.")
-	snapToRestore   = restoreCmd.Arg("snap", "The snap to restore.").Required().Int()
-	relDirToRestore = restoreCmd.Arg("restore-dir", "The dir to restore into. Must exist and be empty.").Required().ExistingDir()
+	restoreCmd        = kingpin.Command("restore", "Restores a snap.")
+	snapToRestore     = restoreCmd.Arg("snap", "The snap to restore.").Required().Int()
+	relDirToRestore   = restoreCmd.Arg("restore-dir", "The dir to restore into. Must exist and be empty.").Required().ExistingDir()
+	restorePrefixPath = restoreCmd.Flag("prefix-path", "Only the files whose path starts with this prefix are considered.").String()
+
+	infoSnapCmd = kingpin.Command("info-snap", "Gives relevant information on a snap.")
+	snapToInfo  = infoSnapCmd.Arg("snap", "The snap to give info about.").Required().Int()
+
+	listSnapCmd = kingpin.Command("list-snap", "Prints the list of files for a snap.")
+	snapToList  = listSnapCmd.Arg("snap", "The snap to list files for.").Required().Int()
 )
 
 func app() (errApp error) {
@@ -86,8 +95,14 @@ func app() (errApp error) {
 			if dirToRestore, errAbsolutizing := filepath.Abs(*relDirToRestore); errAbsolutizing != nil {
 				errApp = errAbsolutizing
 			} else {
-				errApp = restore.Restore(bkpDir, *snapToRestore, dirToRestore)
+				errApp = restore.Restore(bkpDir, *snapToRestore, dirToRestore, restorePrefixPath)
 			}
+
+		case infoSnapCmd.FullCommand():
+			errApp = info_snap.InfoSnap(bkpDir, *snapToInfo)
+
+		case listSnapCmd.FullCommand():
+			errApp = list_snap.ListSnap(bkpDir, *snapToList)
 		}
 	}
 

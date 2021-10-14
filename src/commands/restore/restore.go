@@ -7,15 +7,16 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/proofrock/snapkup/util"
 )
 
 const sql1 = `
-SELECT i.PATH, i.HASH, b.IS_COMPRESSED, i.MODE, i.MOD_TIME
+SELECT i.PATH, i.HASH, COALESCE(b.IS_COMPRESSED, 0), i.MODE, i.MOD_TIME
   FROM ITEMS i
-  JOIN BLOBS b ON b.HASH = i.HASH
+  LEFT JOIN BLOBS b ON b.HASH = i.HASH
  WHERE i.SNAP = ?
  ORDER BY i.PATH ASC`
 
@@ -27,7 +28,7 @@ type item struct {
 	ModTime      int64
 }
 
-func Restore(bkpDir string, snap int, restoreDir string) error {
+func Restore(bkpDir string, snap int, restoreDir string, restorePrefixPath *string) error {
 	if isEmpty, errCheckingEmpty := util.IsEmpty(restoreDir); errCheckingEmpty != nil {
 		return errCheckingEmpty
 	} else if !isEmpty {
@@ -58,6 +59,10 @@ func Restore(bkpDir string, snap int, restoreDir string) error {
 			var item item
 			if errScanning := rows.Scan(&item.Path, &item.Hash, &item.IsCompressed, &item.Mode, &item.ModTime); errScanning != nil {
 				return errScanning
+			}
+
+			if restorePrefixPath != nil && !strings.HasPrefix(item.Path, *restorePrefixPath) {
+				continue
 			}
 
 			if item.Hash == "" {
