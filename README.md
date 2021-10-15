@@ -29,43 +29,53 @@ We will backup the contents of the `C:\MyImportantDir`, using the `C:\MySnapkupD
 
 ### Register the directory to backup as a root
 
-`snapkup.exe -d C:\MySnapkupDir add-root C:\MyImportantDir`
+`snapkup.exe -d C:\MySnapkupDir root add C:\MyImportantDir`
 
 ### Take your first snapshot
 
-`snapkup.exe -d C:\MySnapkupDir snap`
+`snapkup.exe -d C:\MySnapkupDir snap take`
 
-*add `-z` if you want to compress the files being backed up. Add `-l` to specify a label.*
+*Add `-z` if you want to compress the files being backed up. Add `-l` to specify a label.*
 
-`snapkup.exe -d C:\MySnapkupDir snap -z -l "My first label"`
+`snapkup.exe -d C:\MySnapkupDir snap take -z -l "My first label"`
+
+*Alias: `snap do`*
 
 ### Change the label of a snap
 
-`snapkup.exe -d C:\MySnapkupDir label-snap 0 "My First Label"`
+`snapkup.exe -d C:\MySnapkupDir snap label 0 "My First Label"`
+
+*Alias: `snap lbl`*
 
 ### Get info on a snapshot
 
-`snapkup.exe -d C:\MySnapkupDir info-snap 0`
+`snapkup.exe -d C:\MySnapkupDir snap info 0`
 
 *gives info like: number of files, number of dirs, size, and how much space on backup filesystem will be freed if this snap is deleted.*
 
 ### Get the file list on a snapshot
 
-`snapkup.exe -d C:\MySnapkupDir list-snap 0`
+`snapkup.exe -d C:\MySnapkupDir snap filelist 0`
 
 *prints a list of the directories and files for a snap.*
 
+*Alias: `snap fl`*
+
 ### Delete it, because... just because.
 
-`snapkup.exe -d C:\MySnapkupDir del-snap 0`
+`snapkup.exe -d C:\MySnapkupDir snap del 0`
+
+*Alias: `snap rm`*
 
 ### Or restore it!
 
-`snapkup.exe -d C:\MySnapkupDir restore 0 C:\MyRestoreDir`
+`snapkup.exe -d C:\MySnapkupDir snap restore 0 C:\MyRestoreDir`
 
 *the destination directory must be empty. It is also possible to specify a prefix path to select only a part of the file list:*
 
-`snapkup.exe -d C:\MySnapkupDir restore 0 C:\MyRestoreDir --prefix-path /foo/bar`
+`snapkup.exe -d C:\MySnapkupDir snap restore 0 C:\MyRestoreDir --prefix-path /foo/bar`
+
+*Alias: `snap res`*
 
 ## Status
 

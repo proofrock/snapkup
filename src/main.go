@@ -29,35 +29,39 @@ var (
 
 	initCmd = kingpin.Command("init", "Initializes an empty backups directory.")
 
-	addRootCmd   = kingpin.Command("add-root", "Adds a new root to the pool.")
+	rootCmd = kingpin.Command("root", "Commands related to the root(s)").Alias("r")
+
+	addRootCmd   = rootCmd.Command("add", "Adds a new root to the pool.").Alias("a")
 	relRootToAdd = addRootCmd.Arg("root", "The new root to add.").Required().ExistingFileOrDir()
 
-	listRootsCmd = kingpin.Command("list-roots", "Lists the roots currently in the pool")
+	listRootsCmd = rootCmd.Command("list", "Lists the roots currently in the pool").Alias("ls")
 
-	delRootCmd = kingpin.Command("del-root", "Removes a root from the pool.")
+	delRootCmd = rootCmd.Command("del", "Removes a root from the pool.").Alias("rm")
 	rootToDel  = delRootCmd.Arg("root", "The root to remove.").Required().String()
 
-	snapCmd      = kingpin.Command("snap", "Takes a new snapshot of the roots.")
+	snpCmd = kingpin.Command("snap", "Commands related to the snap(s)").Alias("s")
+
+	snapCmd      = snpCmd.Command("take", "Takes a new snapshot of the roots.").Alias("do")
 	snapCompress = snapCmd.Flag("compress", "Compresses the stored files.").Short('z').Bool()
 	snapLabel    = snapCmd.Flag("label", "Label for this snap.").Short('l').Default("").String()
 
-	listSnapsCmd = kingpin.Command("list-snaps", "Lists the snaps currently in the pool")
+	listSnapsCmd = snpCmd.Command("list", "Lists the snaps currently in the pool").Alias("ls")
 
-	delSnapCmd = kingpin.Command("del-snap", "Removes a snap from the pool.")
+	delSnapCmd = snpCmd.Command("del", "Removes a snap from the pool.").Alias("rm")
 	snapToDel  = delSnapCmd.Arg("snap", "The snap to remove.").Required().Int()
 
-	restoreCmd        = kingpin.Command("restore", "Restores a snap.")
+	restoreCmd        = snpCmd.Command("restore", "Restores a snap.").Alias("res")
 	snapToRestore     = restoreCmd.Arg("snap", "The snap to restore.").Required().Int()
 	relDirToRestore   = restoreCmd.Arg("restore-dir", "The dir to restore into. Must exist and be empty.").Required().ExistingDir()
 	restorePrefixPath = restoreCmd.Flag("prefix-path", "Only the files whose path starts with this prefix are considered.").String()
 
-	infoSnapCmd = kingpin.Command("info-snap", "Gives relevant information on a snap.")
+	infoSnapCmd = snpCmd.Command("info", "Gives relevant information on a snap.")
 	snapToInfo  = infoSnapCmd.Arg("snap", "The snap to give info about.").Required().Int()
 
-	listSnapCmd = kingpin.Command("list-snap", "Prints the list of files for a snap.")
+	listSnapCmd = snpCmd.Command("filelist", "Prints the list of files for a snap.").Alias("fl")
 	snapToList  = listSnapCmd.Arg("snap", "The snap to list files for.").Required().Int()
 
-	labelSnapCmd   = kingpin.Command("label-snap", "Sets or changes the label of a snap.")
+	labelSnapCmd   = snpCmd.Command("label", "Sets or changes the label of a snap.").Alias("lbl")
 	snapToLabel    = labelSnapCmd.Arg("snap", "The snap to label.").Required().Int()
 	labelSnapLabel = labelSnapCmd.Arg("label", "The label.").Required().String()
 )
