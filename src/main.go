@@ -12,6 +12,7 @@ import (
 	delsnaps "github.com/proofrock/snapkup/commands/del_snap"
 	"github.com/proofrock/snapkup/commands/info_snap"
 	initcmd "github.com/proofrock/snapkup/commands/init"
+	labelsnap "github.com/proofrock/snapkup/commands/label_snap"
 	listroots "github.com/proofrock/snapkup/commands/list_roots"
 	"github.com/proofrock/snapkup/commands/list_snap"
 	listsnaps "github.com/proofrock/snapkup/commands/list_snaps"
@@ -38,6 +39,7 @@ var (
 
 	snapCmd      = kingpin.Command("snap", "Takes a new snapshot of the roots.")
 	snapCompress = snapCmd.Flag("compress", "Compresses the stored files.").Short('z').Bool()
+	snapLabel    = snapCmd.Flag("label", "Label for this snap.").Short('l').Default("").String()
 
 	listSnapsCmd = kingpin.Command("list-snaps", "Lists the snaps currently in the pool")
 
@@ -54,6 +56,10 @@ var (
 
 	listSnapCmd = kingpin.Command("list-snap", "Prints the list of files for a snap.")
 	snapToList  = listSnapCmd.Arg("snap", "The snap to list files for.").Required().Int()
+
+	labelSnapCmd   = kingpin.Command("label-snap", "Sets or changes the label of a snap.")
+	snapToLabel    = labelSnapCmd.Arg("snap", "The snap to label.").Required().Int()
+	labelSnapLabel = labelSnapCmd.Arg("label", "The label.").Required().String()
 )
 
 func app() (errApp error) {
@@ -83,7 +89,7 @@ func app() (errApp error) {
 			errApp = delroot.DelRoot(bkpDir, *rootToDel)
 
 		case snapCmd.FullCommand():
-			errApp = snap.Snap(bkpDir, *snapCompress)
+			errApp = snap.Snap(bkpDir, *snapCompress, *snapLabel)
 
 		case listSnapsCmd.FullCommand():
 			errApp = listsnaps.ListSnaps(bkpDir)
@@ -103,6 +109,9 @@ func app() (errApp error) {
 
 		case listSnapCmd.FullCommand():
 			errApp = list_snap.ListSnap(bkpDir, *snapToList)
+
+		case labelSnapCmd.FullCommand():
+			errApp = labelsnap.LabelSnap(bkpDir, *snapToLabel, *labelSnapLabel)
 		}
 	}
 

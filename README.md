@@ -35,7 +35,13 @@ We will backup the contents of the `C:\MyImportantDir`, using the `C:\MySnapkupD
 
 `snapkup.exe -d C:\MySnapkupDir snap`
 
-*add `-z` if you want to compress the files being backed up*.
+*add `-z` if you want to compress the files being backed up. Add `-l` to specify a label.*
+
+`snapkup.exe -d C:\MySnapkupDir snap -z -l "My first label"`
+
+### Change the label of a snap
+
+`snapkup.exe -d C:\MySnapkupDir label-snap 0 "My First Label"`
 
 ### Get info on a snapshot
 
