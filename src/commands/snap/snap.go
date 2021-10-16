@@ -10,7 +10,7 @@ import (
 	"github.com/proofrock/snapkup/util"
 )
 
-func Snap(bkpDir string, compress bool) error {
+func Snap(bkpDir string, compress bool, label string) error {
 	dbPath, errComposingDbPath := util.DbFile(bkpDir)
 	if errComposingDbPath != nil {
 		return errComposingDbPath
@@ -49,15 +49,28 @@ func Snap(bkpDir string, compress bool) error {
 		return errGettingRoots
 	}
 
-	files, numFiles, numDirs := util.WalkFSTree(roots)
+	var iv []byte
+	row := db.QueryRow("SELECT VALUE FROM PARAMS WHERE KEY = 'IV'")
+	if errQuerying := row.Scan(&iv); errQuerying != nil {
+		tx.Rollback()
+		return errQuerying
+	}
+
+	files, numFiles, numDirs := util.WalkFSTree(roots, iv)
 	fmt.Printf("Found %d files and %d directories.\n", numFiles, numDirs)
 
 	sort.Slice(files, func(i int, j int) bool { return files[i].FullPath < files[j].FullPath })
 
-	snap, errRecSnap := recNewSnap(tx)
-	if errRecSnap != nil {
+	var snap int
+	row = tx.QueryRow("SELECT COALESCE(MAX(ID) + 1, 0) FROM SNAPS")
+	if errIdSnap := row.Scan(&snap); errIdSnap != nil {
 		tx.Rollback()
-		return errRecSnap
+		return errIdSnap
+	}
+	_, errNewSnap := tx.Exec("INSERT INTO SNAPS (ID, TIMESTAMP, LABEL) VALUES (?, ?, ?)", snap, time.Now().UnixMilli(), label)
+	if errNewSnap != nil {
+		tx.Rollback()
+		return errNewSnap
 	}
 
 	st1tx := tx.Stmt(st1)
@@ -105,7 +118,7 @@ func Snap(bkpDir string, compress bool) error {
 
 	// Iterates over the blobs to write, and writes them (compressing or not)
 	for hash, finfo := range newHashes {
-		pathDest := path.Join(bkpDir, hash[0:2], hash[2:])
+		pathDest := path.Join(bkpDir, hash[0:1], hash)
 
 		blobSize, errCopying := util.Store(finfo.FullPath, pathDest, compress)
 		if errCopying != nil {
@@ -131,14 +144,4 @@ func Snap(bkpDir string, compress bool) error {
 	fmt.Printf("Snap %d correctly created\n", snap)
 
 	return nil
-}
-
-func recNewSnap(tx *sql.Tx) (nuSnap int, errNewSnap error) {
-	row := tx.QueryRow("SELECT COALESCE(MAX(ID) + 1, 0) FROM SNAPS")
-	errNewSnap = row.Scan(&nuSnap)
-	if errNewSnap != nil {
-		return
-	}
-	_, errNewSnap = tx.Exec("INSERT INTO SNAPS (ID, TIMESTAMP) VALUES (?, ?)", nuSnap, time.Now().UnixMilli())
-	return
 }

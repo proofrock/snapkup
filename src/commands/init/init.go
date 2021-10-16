@@ -4,18 +4,26 @@ import (
 	"database/sql"
 	"fmt"
 	"io/fs"
+	"math/rand"
 	"os"
 	"path"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/proofrock/snapkup/util"
 )
 
-var sqls = [4]string{
+var sqls = [5]string{
+	`CREATE TABLE "PARAMS" (
+		"KEY"	TEXT NOT NULL,
+		"VALUE"	TEXT NOT NULL,
+		PRIMARY KEY("KEY")
+	)`,
 	`CREATE TABLE "SNAPS" (
 		"ID"		INTEGER NOT NULL,
 		"TIMESTAMP"	INTEGER NOT NULL,
+		"LABEL"		TEXT NOT NULL,
 		PRIMARY KEY("ID")
 	)`,
 	`CREATE TABLE "ITEMS" (
@@ -40,8 +48,6 @@ var sqls = [4]string{
 		PRIMARY KEY("PATH")
 	)`,
 }
-
-const hex = "0123456789abcdef"
 
 func Init(bkpDir string) error {
 	if isEmpty, errCheckingEmpty := util.IsEmpty(bkpDir); errCheckingEmpty != nil {
@@ -70,14 +76,24 @@ func Init(bkpDir string) error {
 		}
 	}
 
+	iv := make([]byte, 16, 16)
+	rand.Seed(time.Now().Unix())
+	if _, errRandomizing := rand.Read(iv); errRandomizing != nil {
+		return errRandomizing
+	}
+
+	if _, errExecing := tx.Exec("INSERT INTO PARAMS (KEY, VALUE) VALUES ('IV', ?)", iv); errExecing != nil {
+		tx.Rollback()
+		return errExecing
+	}
+
 	if errCommitting := tx.Commit(); errCommitting != nil {
 		return errCommitting
 	}
 
-	for i := 0; i < 16; i++ {
-		for j := 0; j < 16; j++ {
-			os.Mkdir(path.Join(bkpDir, hex[i:i+1]+hex[j:j+1]), fs.FileMode(0700))
-		}
+	hex := []rune("0123456789abcdef")
+	for i := 0; i < len(hex); i++ {
+		os.Mkdir(path.Join(bkpDir, string(hex[i])), fs.FileMode(0700))
 	}
 
 	println("Backup directory correctly initialized in ", bkpDir)

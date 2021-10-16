@@ -7,27 +7,29 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/proofrock/snapkup/util"
 )
 
 const sql1 = `
-SELECT i.PATH, i.HASH, b.IS_COMPRESSED, i.MODE, i.MOD_TIME
+SELECT i.PATH, i.HASH, i.IS_DIR, COALESCE(b.IS_COMPRESSED, 0), i.MODE, i.MOD_TIME
   FROM ITEMS i
-  JOIN BLOBS b ON b.HASH = i.HASH
+  LEFT JOIN BLOBS b ON b.HASH = i.HASH
  WHERE i.SNAP = ?
  ORDER BY i.PATH ASC`
 
 type item struct {
 	Path         string
 	Hash         string
+	IsDir        int
 	IsCompressed int
 	Mode         uint32
 	ModTime      int64
 }
 
-func Restore(bkpDir string, snap int, restoreDir string) error {
+func Restore(bkpDir string, snap int, restoreDir string, restorePrefixPath *string) error {
 	if isEmpty, errCheckingEmpty := util.IsEmpty(restoreDir); errCheckingEmpty != nil {
 		return errCheckingEmpty
 	} else if !isEmpty {
@@ -56,8 +58,12 @@ func Restore(bkpDir string, snap int, restoreDir string) error {
 		defer rows.Close()
 		for rows.Next() {
 			var item item
-			if errScanning := rows.Scan(&item.Path, &item.Hash, &item.IsCompressed, &item.Mode, &item.ModTime); errScanning != nil {
+			if errScanning := rows.Scan(&item.Path, &item.Hash, &item.IsDir, &item.IsCompressed, &item.Mode, &item.ModTime); errScanning != nil {
 				return errScanning
+			}
+
+			if restorePrefixPath != nil && !strings.HasPrefix(item.Path, *restorePrefixPath) {
+				continue
 			}
 
 			if item.Hash == "" {
@@ -77,9 +83,9 @@ func Restore(bkpDir string, snap int, restoreDir string) error {
 
 	for _, item := range items {
 		dest := path.Join(restoreDir, item.Path)
-		if item.Hash != "" {
+		if item.IsDir == 0 {
 			// it's a file
-			source := path.Join(bkpDir, item.Hash[0:2], item.Hash[2:])
+			source := path.Join(bkpDir, item.Hash[0:1], item.Hash)
 
 			if errMkingDir := os.MkdirAll(filepath.Dir(dest), os.FileMode(0700)); errMkingDir != nil {
 				return errMkingDir
@@ -87,6 +93,10 @@ func Restore(bkpDir string, snap int, restoreDir string) error {
 
 			if errCopying := util.Restore(source, dest, item.IsCompressed == 1); errCopying != nil {
 				return errCopying
+			}
+		} else {
+			if errMkingDir := os.MkdirAll(dest, os.FileMode(0700)); errMkingDir != nil {
+				return errMkingDir
 			}
 		}
 	}

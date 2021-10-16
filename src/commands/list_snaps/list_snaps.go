@@ -11,6 +11,7 @@ import (
 type snap struct {
 	id        int
 	timestamp int64
+	label     string
 }
 
 func ListSnaps(bkpDir string) error {
@@ -26,14 +27,14 @@ func ListSnaps(bkpDir string) error {
 	defer db.Close()
 
 	var snaps []snap
-	rows, errQuerying := db.Query("SELECT ID, TIMESTAMP FROM SNAPS ORDER BY ID DESC")
+	rows, errQuerying := db.Query("SELECT ID, TIMESTAMP, LABEL FROM SNAPS ORDER BY ID DESC")
 	if errQuerying != nil {
 		return errQuerying
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var snap snap
-		if errScanning := rows.Scan(&snap.id, &snap.timestamp); errScanning != nil {
+		if errScanning := rows.Scan(&snap.id, &snap.timestamp, &snap.label); errScanning != nil {
 			return errScanning
 		}
 		snaps = append(snaps, snap)
@@ -44,7 +45,7 @@ func ListSnaps(bkpDir string) error {
 
 	for _, snap := range snaps {
 		ts := time.UnixMilli(snap.timestamp).Local().Format("2 Jan 2006, 15:04:05 (MST)")
-		fmt.Printf("Snap %d:\t%s\n", snap.id, ts)
+		fmt.Printf("Snap %d:\t%s\t%s\n", snap.id, ts, snap.label)
 	}
 
 	return nil

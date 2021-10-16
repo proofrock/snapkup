@@ -53,7 +53,7 @@ func DelSnap(bkpDir string, toDel int) error {
 		if errScanning := rows.Scan(&hash); errScanning != nil {
 			return errScanning
 		}
-		pathToDel := path.Join(bkpDir, hash[0:2], hash[2:])
+		pathToDel := path.Join(bkpDir, hash[0:1], hash)
 		if errDeleting := os.Remove(pathToDel); errDeleting != nil {
 			fmt.Fprintf(os.Stderr, "ERROR: deleting file %s; %v\n", hash, errDeleting)
 		}
