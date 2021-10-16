@@ -85,7 +85,7 @@ func Restore(bkpDir string, snap int, restoreDir string, restorePrefixPath *stri
 		dest := path.Join(restoreDir, item.Path)
 		if item.IsDir == 0 {
 			// it's a file
-			source := path.Join(bkpDir, item.Hash[0:2], item.Hash[2:])
+			source := path.Join(bkpDir, item.Hash[0:1], item.Hash)
 
 			if errMkingDir := os.MkdirAll(filepath.Dir(dest), os.FileMode(0700)); errMkingDir != nil {
 				return errMkingDir

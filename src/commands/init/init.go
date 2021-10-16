@@ -49,8 +49,6 @@ var sqls = [5]string{
 	)`,
 }
 
-const hex = "0123456789abcdef"
-
 func Init(bkpDir string) error {
 	if isEmpty, errCheckingEmpty := util.IsEmpty(bkpDir); errCheckingEmpty != nil {
 		return errCheckingEmpty
@@ -93,10 +91,9 @@ func Init(bkpDir string) error {
 		return errCommitting
 	}
 
-	for i := 0; i < 16; i++ {
-		for j := 0; j < 16; j++ {
-			os.Mkdir(path.Join(bkpDir, hex[i:i+1]+hex[j:j+1]), fs.FileMode(0700))
-		}
+	hex := []rune("0123456789abcdef")
+	for i := 0; i < len(hex); i++ {
+		os.Mkdir(path.Join(bkpDir, string(hex[i])), fs.FileMode(0700))
 	}
 
 	println("Backup directory correctly initialized in ", bkpDir)

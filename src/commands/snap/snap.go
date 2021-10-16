@@ -118,7 +118,7 @@ func Snap(bkpDir string, compress bool, label string) error {
 
 	// Iterates over the blobs to write, and writes them (compressing or not)
 	for hash, finfo := range newHashes {
-		pathDest := path.Join(bkpDir, hash[0:2], hash[2:])
+		pathDest := path.Join(bkpDir, hash[0:1], hash)
 
 		blobSize, errCopying := util.Store(finfo.FullPath, pathDest, compress)
 		if errCopying != nil {
