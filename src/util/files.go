@@ -123,13 +123,6 @@ func FileHash(path string) (string, error) {
 	}
 
 	ret := hasher.Sum(nil)
-	stat, _ := source.Stat()
-	len := stat.Size()
-
-	for len > 0 {
-		ret = append(ret, byte(0xff&len))
-		len >>= 8
-	}
 
 	return strings.ToLower(hex.EncodeToString(ret)), nil
 }
