@@ -4,15 +4,22 @@ import (
 	"database/sql"
 	"fmt"
 	"io/fs"
+	"math/rand"
 	"os"
 	"path"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 
 	"github.com/proofrock/snapkup/util"
 )
 
-var sqls = [4]string{
+var sqls = [5]string{
+	`CREATE TABLE "PARAMS" (
+		"KEY"	TEXT NOT NULL,
+		"VALUE"	TEXT NOT NULL,
+		PRIMARY KEY("KEY")
+	)`,
 	`CREATE TABLE "SNAPS" (
 		"ID"		INTEGER NOT NULL,
 		"TIMESTAMP"	INTEGER NOT NULL,
@@ -69,6 +76,17 @@ func Init(bkpDir string) error {
 			tx.Rollback() // error is not managed
 			return errExecing
 		}
+	}
+
+	iv := make([]byte, 16, 16)
+	rand.Seed(time.Now().Unix())
+	if _, errRandomizing := rand.Read(iv); errRandomizing != nil {
+		return errRandomizing
+	}
+
+	if _, errExecing := tx.Exec("INSERT INTO PARAMS (KEY, VALUE) VALUES ('IV', ?)", iv); errExecing != nil {
+		tx.Rollback()
+		return errExecing
 	}
 
 	if errCommitting := tx.Commit(); errCommitting != nil {

@@ -38,7 +38,7 @@ type FileNfo struct {
 	Mode         fs.FileMode
 }
 
-func WalkFSTree(roots []string) (files []FileNfo, numFiles int, numDirs int) {
+func WalkFSTree(roots []string, iv []byte) (files []FileNfo, numFiles int, numDirs int) {
 	for _, root := range roots {
 		if froot, errStatsing := os.Stat(root); errStatsing != nil {
 			fmt.Fprintf(os.Stderr, "Error in Stat() of root: %v\n", errStatsing)
@@ -55,7 +55,7 @@ func WalkFSTree(roots []string) (files []FileNfo, numFiles int, numDirs int) {
 					} else {
 						numFiles++
 						isDir = 0
-						if _hash, errHashing := FileHash(path); errHashing != nil {
+						if _hash, errHashing := FileHash(path, iv); errHashing != nil {
 							fmt.Fprintf(os.Stderr, "Error hashing file: %v\n", errHashing)
 						} else {
 							hash = _hash
@@ -75,7 +75,7 @@ func WalkFSTree(roots []string) (files []FileNfo, numFiles int, numDirs int) {
 				return nil
 			})
 		} else {
-			if hash, errHashing := FileHash(root); errHashing != nil {
+			if hash, errHashing := FileHash(root, iv); errHashing != nil {
 				fmt.Fprintf(os.Stderr, "Error hashing file: %v\n", errHashing)
 			} else {
 				files = append(files, FileNfo{
@@ -97,16 +97,14 @@ func WalkFSTree(roots []string) (files []FileNfo, numFiles int, numDirs int) {
 
 const bufSize = 1024 * 32 // 32Kb
 
-var nothingUpMySleeve = []byte("SnapkupIsCool!!!")
-
-func FileHash(path string) (string, error) {
+func FileHash(path string, iv []byte) (string, error) {
 	source, errOpening := os.Open(path)
 	if errOpening != nil {
 		return "", errOpening
 	}
 	defer source.Close()
 
-	hasher := siphash.New128(nothingUpMySleeve)
+	hasher := siphash.New128(iv)
 	buf := make([]byte, bufSize)
 	for {
 		n, errHashingFile := source.Read(buf)

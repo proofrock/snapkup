@@ -24,7 +24,6 @@ func AddRoot(bkpDir string, toAdd string) error {
 		return errBeginning
 	}
 
-	// TODO QueryOnce
 	throwaway := 1
 	row := db.QueryRow("SELECT 1 FROM ROOTS WHERE PATH = ?", toAdd)
 	if errQuerying := row.Scan(&throwaway); errQuerying == nil {

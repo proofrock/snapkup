@@ -49,13 +49,20 @@ func Snap(bkpDir string, compress bool, label string) error {
 		return errGettingRoots
 	}
 
-	files, numFiles, numDirs := util.WalkFSTree(roots)
+	var iv []byte
+	row := db.QueryRow("SELECT VALUE FROM PARAMS WHERE KEY = 'IV'")
+	if errQuerying := row.Scan(&iv); errQuerying != nil {
+		tx.Rollback()
+		return errQuerying
+	}
+
+	files, numFiles, numDirs := util.WalkFSTree(roots, iv)
 	fmt.Printf("Found %d files and %d directories.\n", numFiles, numDirs)
 
 	sort.Slice(files, func(i int, j int) bool { return files[i].FullPath < files[j].FullPath })
 
 	var snap int
-	row := tx.QueryRow("SELECT COALESCE(MAX(ID) + 1, 0) FROM SNAPS")
+	row = tx.QueryRow("SELECT COALESCE(MAX(ID) + 1, 0) FROM SNAPS")
 	if errIdSnap := row.Scan(&snap); errIdSnap != nil {
 		tx.Rollback()
 		return errIdSnap
