@@ -14,7 +14,7 @@ import (
 )
 
 const sql1 = `
-SELECT i.PATH, i.HASH, COALESCE(b.IS_COMPRESSED, 0), i.MODE, i.MOD_TIME
+SELECT i.PATH, i.HASH, i.IS_DIR, COALESCE(b.IS_COMPRESSED, 0), i.MODE, i.MOD_TIME
   FROM ITEMS i
   LEFT JOIN BLOBS b ON b.HASH = i.HASH
  WHERE i.SNAP = ?
@@ -23,6 +23,7 @@ SELECT i.PATH, i.HASH, COALESCE(b.IS_COMPRESSED, 0), i.MODE, i.MOD_TIME
 type item struct {
 	Path         string
 	Hash         string
+	IsDir        int
 	IsCompressed int
 	Mode         uint32
 	ModTime      int64
@@ -57,7 +58,7 @@ func Restore(bkpDir string, snap int, restoreDir string, restorePrefixPath *stri
 		defer rows.Close()
 		for rows.Next() {
 			var item item
-			if errScanning := rows.Scan(&item.Path, &item.Hash, &item.IsCompressed, &item.Mode, &item.ModTime); errScanning != nil {
+			if errScanning := rows.Scan(&item.Path, &item.Hash, &item.IsDir, &item.IsCompressed, &item.Mode, &item.ModTime); errScanning != nil {
 				return errScanning
 			}
 
@@ -82,7 +83,7 @@ func Restore(bkpDir string, snap int, restoreDir string, restorePrefixPath *stri
 
 	for _, item := range items {
 		dest := path.Join(restoreDir, item.Path)
-		if item.Hash != "" {
+		if item.IsDir == 0 {
 			// it's a file
 			source := path.Join(bkpDir, item.Hash[0:2], item.Hash[2:])
 
@@ -92,6 +93,10 @@ func Restore(bkpDir string, snap int, restoreDir string, restorePrefixPath *stri
 
 			if errCopying := util.Restore(source, dest, item.IsCompressed == 1); errCopying != nil {
 				return errCopying
+			}
+		} else {
+			if errMkingDir := os.MkdirAll(dest, os.FileMode(0700)); errMkingDir != nil {
+				return errMkingDir
 			}
 		}
 	}
