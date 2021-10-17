@@ -6,11 +6,13 @@ Snapkup is a simple backup tool that takes snapshots of your filesystem (or the 
 
 Snapkup's goal is to store efficiently one or more filesystem's situation at given points in time, in a manner that is friendly to e.g. Dropbox sync or removable storage.
 
+It favours correctness, features and readability over speed. E.g. it uses the best compression by default.
+
 - You initialize an empty directory that will store the backups
 - You register one or more backup roots, directory or files that will be snapshotted
 - You take one or more snapshots. Snapkup lists all the tree for those roots, taking a snapshot of the contents
     - All the files in the roots are deduplicated, and only the files that are different are stored
-    - It's possible to compress the files, using  `zstd -9`
+    - By default, it compresses the files, unless you choose not to. Algorithm used is `zstd -19`
     - Files are stored in an efficient manner, with a shallow directory structure.
 - You can restore the situation of the roots at a given snapshot, later on
     - Files' and dirs' mode and modification time are preserved
@@ -35,9 +37,9 @@ We will backup the contents of the `C:\MyImportantDir`, using the `C:\MySnapkupD
 
 `snapkup.exe -d C:\MySnapkupDir snap take`
 
-*Add `-z` if you want to compress the files being backed up. Add `-l` to specify a label.*
+*By default it compresses files with zstd, level 9. Add `--no-compress` if you want to deactivate this. Add `-l` to specify a label.*
 
-`snapkup.exe -d C:\MySnapkupDir snap take -z -l "My first label"`
+`snapkup.exe -d C:\MySnapkupDir snap take --no-compress -l "My first label"`
 
 *Alias: `snap do`*
 

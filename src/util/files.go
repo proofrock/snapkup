@@ -162,7 +162,7 @@ func Store(src string, dst string, compress bool) (blobSize int64, err error) {
 		}
 		defer destination.Close()
 
-		zDestination := zstd.NewWriterLevel(destination, 9)
+		zDestination := zstd.NewWriterLevel(destination, 19)
 		defer zDestination.Close()
 
 		if _, errCopyingStreams := io.Copy(zDestination, source); errCopyingStreams != nil {

@@ -41,9 +41,9 @@ var (
 
 	snpCmd = kingpin.Command("snap", "Commands related to the snap(s)").Alias("s")
 
-	snapCmd      = snpCmd.Command("take", "Takes a new snapshot of the roots.").Alias("do")
-	snapCompress = snapCmd.Flag("compress", "Compresses the stored files.").Short('z').Bool()
-	snapLabel    = snapCmd.Flag("label", "Label for this snap.").Short('l').Default("").String()
+	snapCmd        = snpCmd.Command("take", "Takes a new snapshot of the roots.").Alias("do")
+	snapNoCompress = snapCmd.Flag("no-compress", "Doesn't compress the stored files.").Bool()
+	snapLabel      = snapCmd.Flag("label", "Label for this snap.").Short('l').Default("").String()
 
 	listSnapsCmd = snpCmd.Command("list", "Lists the snaps currently in the pool").Alias("ls")
 
@@ -93,7 +93,7 @@ func app() (errApp error) {
 			errApp = delroot.DelRoot(bkpDir, *rootToDel)
 
 		case snapCmd.FullCommand():
-			errApp = snap.Snap(bkpDir, *snapCompress, *snapLabel)
+			errApp = snap.Snap(bkpDir, *snapNoCompress, *snapLabel)
 
 		case listSnapsCmd.FullCommand():
 			errApp = listsnaps.ListSnaps(bkpDir)
