@@ -8,9 +8,11 @@ import (
 	"time"
 
 	"github.com/proofrock/snapkup/util"
+
+	pb "github.com/cheggaaa/pb/v3"
 )
 
-func Snap(bkpDir string, compress bool, label string) error {
+func Snap(bkpDir string, dontCompress bool, label string) error {
 	dbPath, errComposingDbPath := util.DbFile(bkpDir)
 	if errComposingDbPath != nil {
 		return errComposingDbPath
@@ -117,18 +119,23 @@ func Snap(bkpDir string, compress bool, label string) error {
 	fmt.Printf("%d new blobs to write\n", len(newHashes))
 
 	// Iterates over the blobs to write, and writes them (compressing or not)
+	i := 1
+	tot := len(newHashes)
+	bar := pb.Full.Start(tot)
 	for hash, finfo := range newHashes {
 		pathDest := path.Join(bkpDir, hash[0:1], hash)
 
-		blobSize, errCopying := util.Store(finfo.FullPath, pathDest, compress)
+		bar.Increment()
+		i++
+		blobSize, errCopying := util.Store(finfo.FullPath, pathDest, dontCompress)
 		if errCopying != nil {
 			tx.Rollback()
 			return errCopying
 		}
 
-		iCompressed := 0
-		if compress {
-			iCompressed = 1
+		iCompressed := 1
+		if dontCompress {
+			iCompressed = 0
 		}
 
 		if _, errInsertingBlob := st3tx.Exec(hash, finfo.Size, blobSize, iCompressed, 0); errInsertingBlob != nil {
@@ -136,6 +143,7 @@ func Snap(bkpDir string, compress bool, label string) error {
 			return errInsertingBlob
 		}
 	}
+	bar.Finish()
 
 	if errCommitting := tx.Commit(); errCommitting != nil {
 		return errCommitting

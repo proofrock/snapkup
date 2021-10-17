@@ -146,8 +146,8 @@ func simpleCopy(src string, dst string) error {
 	return nil
 }
 
-func Store(src string, dst string, compress bool) (blobSize int64, err error) {
-	if compress {
+func Store(src string, dst string, dontCompress bool) (blobSize int64, err error) {
+	if !dontCompress {
 		source, errOpening := os.Open(src)
 		if errOpening != nil {
 			err = errOpening
