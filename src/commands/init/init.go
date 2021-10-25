@@ -1,13 +1,12 @@
 package init
 
 import (
+	"crypto/rand"
 	"database/sql"
 	"fmt"
 	"io/fs"
-	"math/rand"
 	"os"
 	"path"
-	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 
@@ -77,7 +76,6 @@ func Init(bkpDir string) error {
 	}
 
 	iv := make([]byte, 16, 16)
-	rand.Seed(time.Now().Unix())
 	if _, errRandomizing := rand.Read(iv); errRandomizing != nil {
 		return errRandomizing
 	}

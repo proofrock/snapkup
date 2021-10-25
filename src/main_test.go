@@ -7,14 +7,14 @@ import (
 )
 
 func TestNoArgs(t *testing.T) {
-	testcli.Run("snapkup")
+	testcli.Run("./snapkup")
 	if testcli.Success() {
 		t.Fatal("App without arguments should fail")
 	}
 }
 
 func TestVersion(t *testing.T) {
-	testcli.Run("snapkup", "--version")
+	testcli.Run("./snapkup", "--version")
 	if !testcli.Success() {
 		t.Fatal("App with --version argument should NOT fail")
 	}
@@ -25,7 +25,7 @@ func TestVersion(t *testing.T) {
 }
 
 func TestHelp(t *testing.T) {
-	testcli.Run("snapkup", "--help")
+	testcli.Run("./snapkup", "--help")
 	if !testcli.Success() {
 		t.Fatal("App with --help argument should NOT fail")
 	}
@@ -36,7 +36,7 @@ func TestHelp(t *testing.T) {
 }
 
 func TestInit(t *testing.T) {
-	testcli.Run("snapkup", "--help")
+	testcli.Run("./snapkup", "--help")
 	if !testcli.Success() {
 		t.Fatal("App with --help argument should NOT fail")
 	}

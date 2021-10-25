@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/DataDog/zstd"
 	"github.com/dchest/siphash"
+	"github.com/proofrock/snapkup/util/streams"
 )
 
 // Checked; from https://stackoverflow.com/questions/30697324/how-to-check-if-directory-on-path-is-empty
@@ -125,57 +125,42 @@ func FileHash(path string, iv []byte) (string, error) {
 	return strings.ToLower(hex.EncodeToString(ret)), nil
 }
 
-func simpleCopy(src string, dst string) error {
+const chunkSize = 32 * 1024 * 1024
+
+func Store(src string, dst string, dontCompress bool) (blobSize int64, err error) {
+	key := make([]byte, 32)   // TODO implment
+	compress := !dontCompress // TODO invert upstream
+
 	source, errOpening := os.Open(src)
 	if errOpening != nil {
-		return errOpening
+		err = errOpening
+		return
 	}
 	defer source.Close()
 
 	destination, errCreating := os.Create(dst)
 	if errCreating != nil {
-		return errCreating
+		err = errCreating
+		return
 	}
 	defer destination.Close()
 
-	_, errCopying := io.Copy(destination, source)
-	if errCopying != nil {
-		return errCopying
+	ous, err := streams.NewOS(key, chunkSize, compress, destination)
+	if err != nil {
+		return 0, err
+	}
+	defer ous.Close()
+
+	if _, err = io.Copy(ous, source); err != nil {
+		return 0, err
 	}
 
-	return nil
-}
+	if err = ous.Close(); err != nil {
+		return 0, err
+	}
 
-func Store(src string, dst string, dontCompress bool) (blobSize int64, err error) {
-	if !dontCompress {
-		source, errOpening := os.Open(src)
-		if errOpening != nil {
-			err = errOpening
-			return
-		}
-		defer source.Close()
-
-		destination, errCreating := os.Create(dst)
-		if errCreating != nil {
-			err = errCreating
-			return
-		}
-		defer destination.Close()
-
-		zDestination := zstd.NewWriterLevel(destination, 19)
-		defer zDestination.Close()
-
-		if _, errCopyingStreams := io.Copy(zDestination, source); errCopyingStreams != nil {
-			err = errCopyingStreams
-			return
-		}
-
-		zDestination.Flush()
-	} else {
-		if errCopying := simpleCopy(src, dst); errCopying != nil {
-			err = errCopying
-			return
-		}
+	if err = destination.Close(); err != nil {
+		return 0, err
 	}
 
 	stat, _ := os.Stat(dst)
@@ -185,17 +170,10 @@ func Store(src string, dst string, dontCompress bool) (blobSize int64, err error
 }
 
 func Restore(src string, dst string, isCompressed bool) error {
+	key := make([]byte, 32) // TODO implment
+
 	if _, errStatsing := os.Stat(dst); !os.IsNotExist(errStatsing) {
 		// an identical file already exists
-		return nil
-	}
-
-	if !isCompressed {
-		// it's not compressed. Simply copy and return.
-		if errCopying := simpleCopy(src, dst); errCopying != nil {
-			return errCopying
-		}
-
 		return nil
 	}
 
@@ -205,18 +183,24 @@ func Restore(src string, dst string, isCompressed bool) error {
 	}
 	defer source.Close()
 
-	zSource := zstd.NewReader(source)
-	defer zSource.Close()
-
 	destination, errCreating := os.Create(dst)
 	if errCreating != nil {
 		return errCreating
 	}
 	defer destination.Close()
 
-	_, errCopying := io.Copy(destination, zSource)
-	if errCopying != nil {
-		return errCopying
+	ins, err := streams.NewIS(key, source)
+	if err != nil {
+		return err
+	}
+	defer ins.Close()
+
+	if _, err = io.Copy(destination, ins); err != nil {
+		return err
+	}
+
+	if err = ins.Close(); err != nil {
+		return err
 	}
 
 	return nil
