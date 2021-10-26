@@ -1,19 +1,5 @@
 package util
 
-import (
-	"fmt"
-	"os"
-	"path"
-)
+const ChunkSize = 32 * 1024 * 1024 // 32Mb
 
-const DbFileName = "snapkup.db"
-
-func DbFile(bkpDir string) (string, error) {
-	dbPath := path.Join(bkpDir, DbFileName)
-
-	if _, errNotExists := os.Stat(dbPath); os.IsNotExist(errNotExists) {
-		return "", fmt.Errorf("Database does not exists, initialize backup dir first (%s)", dbPath)
-	}
-
-	return dbPath, nil
-}
+var FakeKey []byte = make([]byte, 32)

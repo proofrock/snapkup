@@ -7,17 +7,16 @@ import (
 
 	"gopkg.in/alecthomas/kingpin.v2"
 
-	addroot "github.com/proofrock/snapkup/commands/add_root"
-	delroot "github.com/proofrock/snapkup/commands/del_root"
 	delsnaps "github.com/proofrock/snapkup/commands/del_snap"
 	"github.com/proofrock/snapkup/commands/info_snap"
 	initcmd "github.com/proofrock/snapkup/commands/init"
 	labelsnap "github.com/proofrock/snapkup/commands/label_snap"
-	listroots "github.com/proofrock/snapkup/commands/list_roots"
 	"github.com/proofrock/snapkup/commands/list_snap"
 	listsnaps "github.com/proofrock/snapkup/commands/list_snaps"
 	"github.com/proofrock/snapkup/commands/restore"
+	"github.com/proofrock/snapkup/commands/root"
 	snap "github.com/proofrock/snapkup/commands/snap"
+	"github.com/proofrock/snapkup/model"
 
 	"github.com/proofrock/snapkup/util"
 )
@@ -66,6 +65,22 @@ var (
 	labelSnapLabel = labelSnapCmd.Arg("label", "The label.").Required().String()
 )
 
+func exec(bkpDir string, save bool, block func(modl *model.Model) error) error {
+	modl, errLoadingModel := model.LoadModel(util.FakeKey, bkpDir)
+	if errLoadingModel != nil {
+		return errLoadingModel
+	}
+	if errExecutingPayload := block(modl); errExecutingPayload != nil {
+		return errExecutingPayload
+	}
+	if save {
+		if errSavingModel := model.SaveModel(util.FakeKey, bkpDir, *modl); errSavingModel != nil {
+			return errSavingModel
+		}
+	}
+	return nil
+}
+
 func app() (errApp error) {
 	kingpin.Version(util.Banner(version))
 
@@ -77,20 +92,20 @@ func app() (errApp error) {
 		switch cliResult {
 
 		case initCmd.FullCommand():
-			errApp = initcmd.Init(bkpDir)
+			errApp = initcmd.Init(util.FakeKey, bkpDir)
 
 		case addRootCmd.FullCommand():
 			if rootToAdd, errAbsolutizing := filepath.Abs(*relRootToAdd); errAbsolutizing != nil {
 				errApp = errAbsolutizing
 			} else {
-				errApp = addroot.AddRoot(bkpDir, rootToAdd)
+				errApp = exec(bkpDir, true, root.Add(rootToAdd))
 			}
 
 		case listRootsCmd.FullCommand():
-			errApp = listroots.ListRoots(bkpDir)
+			errApp = exec(bkpDir, false, root.List())
 
 		case delRootCmd.FullCommand():
-			errApp = delroot.DelRoot(bkpDir, *rootToDel)
+			errApp = exec(bkpDir, true, root.Del(*rootToDel))
 
 		case snapCmd.FullCommand():
 			errApp = snap.Snap(bkpDir, *snapNoCompress, *snapLabel)
