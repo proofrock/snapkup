@@ -10,54 +10,43 @@ import (
 	"golang.org/x/crypto/chacha20poly1305"
 )
 
-var magicNumber []byte = []byte("SNP1")
-
-var mnCompressed []byte = []byte("Z")
-var mnUncompressed []byte = []byte("N")
-
 type OutputStream struct {
-	underlying io.Writer
-	key        []byte
-	chunkSize  int
-	zLevel     int
-	chunkNum   uint32
-	chunk      []byte
-	index      int
-	finished   bool
+	underlying    io.Writer
+	key           []byte
+	neverCompress bool
+	chunkSize     int
+	chunkNum      uint32
+	chunk         []byte
+	index         int
+	finished      bool
 }
 
-func NewOS(key []byte, chunkSize int, compressed bool, w io.Writer) (*OutputStream, error) {
+func NewOS(key []byte, chunkSize int, neverCompress bool, w io.Writer) (*OutputStream, error) {
 	if _, errWritingMagicNumber := w.Write(magicNumber); errWritingMagicNumber != nil {
 		return nil, errWritingMagicNumber
 	}
 
-	var zmg []byte
-	var zLevel int
-	if compressed {
-		zmg = mnCompressed
-		zLevel = 19
-	} else {
-		zmg = mnUncompressed
-		zLevel = -1
-	}
-
-	if _, errWritingMagicNumber := w.Write(zmg); errWritingMagicNumber != nil {
-		return nil, errWritingMagicNumber
-	}
-
-	return &OutputStream{w, key, chunkSize, zLevel, 0, make([]byte, chunkSize), 0, false}, nil
+	return &OutputStream{w, key, neverCompress, chunkSize, 0, make([]byte, chunkSize), 0, false}, nil
 }
 
 func (os *OutputStream) process() error {
 	var compressed []byte
-	if os.zLevel >= 0 {
+	var isCompressed []byte
+	if os.neverCompress {
+		compressed = os.chunk[:os.index]
+		isCompressed = mnUncompressed
+	} else {
 		var errCompressing error
-		compressed, errCompressing = zstd.CompressLevel(nil, os.chunk[:os.index], os.zLevel)
+		compressed, errCompressing = zstd.CompressLevel(nil, os.chunk[:os.index], zLevel)
 		if errCompressing != nil {
 			return errCompressing
 		}
-	} else {
-		compressed = os.chunk[:os.index]
+		if len(compressed) >= os.index {
+			compressed = os.chunk[:os.index]
+			isCompressed = mnUncompressed
+		} else {
+			isCompressed = mnCompressed
+		}
 	}
 
 	aead, errAEAD := chacha20poly1305.NewX(os.key)
@@ -76,6 +65,9 @@ func (os *OutputStream) process() error {
 	os.chunkNum++
 	if errWritingLen := binary.Write(os.underlying, binary.LittleEndian, int64(encLen+len(nonce))); errWritingLen != nil {
 		return errWritingLen
+	}
+	if _, errWritingZ := os.underlying.Write(isCompressed); errWritingZ != nil {
+		return errWritingZ
 	}
 	if _, errWritingNonce := os.underlying.Write(nonce); errWritingNonce != nil {
 		return errWritingNonce

@@ -30,7 +30,7 @@ func TestRW(t *testing.T) {
 		f, _ := os.Create("ciabo")
 		defer f.Close()
 
-		os, err := NewOS(key, 16*MEGA, true, f)
+		os, err := NewOS(key, 16*MEGA, false, f)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -75,6 +75,67 @@ func TestRW(t *testing.T) {
 	}
 }
 
+func TestNoRandom(t *testing.T) {
+	key := make([]byte, 32)
+	rand.Read(key)
+
+	dataLen := 33 * MEGA
+
+	data := make([]byte, dataLen)
+
+	defer func() {
+		os.Remove("ciano")
+	}()
+
+	func() {
+		f, _ := os.Create("ciano")
+		defer f.Close()
+
+		os, err := NewOS(key, 16*MEGA, false, f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer func() {
+			err := os.Close()
+			if err != nil {
+				t.Fatal(err)
+			}
+		}()
+
+		_, err = os.Write(data)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	data2 := make([]byte, dataLen, dataLen)
+
+	func() {
+		f, _ := os.Open("ciano")
+		defer f.Close()
+
+		is, err := NewIS(key, f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer func() {
+			err := is.Close()
+			if err != nil {
+				t.Fatal(err)
+			}
+		}()
+
+		_, err = is.Read(data2)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	if bytes.Compare(data, data2) != 0 {
+		t.Fatal("Data are different")
+	}
+}
+
 func TestNoZ(t *testing.T) {
 	key := make([]byte, 32)
 	rand.Read(key)
@@ -93,7 +154,7 @@ func TestNoZ(t *testing.T) {
 		f, _ := os.Create("ciaco")
 		defer f.Close()
 
-		os, err := NewOS(key, 16*MEGA, false, f)
+		os, err := NewOS(key, 16*MEGA, true, f)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -155,7 +216,7 @@ func TestEOF(t *testing.T) {
 		f, _ := os.Create("ciaao")
 		defer f.Close()
 
-		os, err := NewOS(key, 1020, true, f)
+		os, err := NewOS(key, 1020, false, f)
 		if err != nil {
 			t.Fatal(err)
 		}

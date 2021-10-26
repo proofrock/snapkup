@@ -13,7 +13,6 @@ import (
 type InputStream struct {
 	underlying io.ReadCloser
 	key        []byte
-	compressed bool
 	chunkSize  int
 	chunkNum   uint32
 	chunk      []byte
@@ -29,12 +28,7 @@ func NewIS(key []byte, r io.ReadCloser) (*InputStream, error) {
 	if bytes.Compare(magicNumber, wannabeMagicNumber) != 0 {
 		return nil, errors.New("Wrong magic number")
 	}
-	wannabeMagicNumber = make([]byte, 1)
-	if _, errReadingMagicNumber := r.Read(wannabeMagicNumber); errReadingMagicNumber != nil {
-		return nil, errReadingMagicNumber
-	}
-	compressed := bytes.Compare(wannabeMagicNumber, mnCompressed) == 0
-	return &InputStream{r, key, compressed, 0, 0, nil, 0, false}, nil
+	return &InputStream{r, key, 0, 0, nil, 0, false}, nil
 }
 
 func (is *InputStream) unprocess() (finished bool, errDecrypting error) {
@@ -44,6 +38,12 @@ func (is *InputStream) unprocess() (finished bool, errDecrypting error) {
 	} else if errReadingLen != nil {
 		return false, errReadingLen
 	}
+
+	z := make([]byte, 1)
+	if _, errReadingMagicNumber := is.underlying.Read(z); errReadingMagicNumber != nil {
+		return false, errReadingMagicNumber
+	}
+	isCompressed := z[0] == mnCompressed[0]
 
 	aead, errAEAD := chacha20poly1305.NewX(is.key)
 	if errAEAD != nil {
@@ -68,7 +68,7 @@ func (is *InputStream) unprocess() (finished bool, errDecrypting error) {
 
 	var uncompressed []byte
 	var errDecompressing error
-	if is.compressed {
+	if isCompressed {
 		uncompressed, errDecompressing = zstd.Decompress(nil, compressed)
 		if errDecompressing != nil {
 			return false, errDecompressing

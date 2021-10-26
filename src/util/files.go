@@ -128,8 +128,7 @@ func FileHash(path string, iv []byte) (string, error) {
 const chunkSize = 32 * 1024 * 1024
 
 func Store(src string, dst string, dontCompress bool) (blobSize int64, err error) {
-	key := make([]byte, 32)   // TODO implment
-	compress := !dontCompress // TODO invert upstream
+	key := make([]byte, 32) // TODO implment
 
 	source, errOpening := os.Open(src)
 	if errOpening != nil {
@@ -145,7 +144,7 @@ func Store(src string, dst string, dontCompress bool) (blobSize int64, err error
 	}
 	defer destination.Close()
 
-	ous, err := streams.NewOS(key, chunkSize, compress, destination)
+	ous, err := streams.NewOS(key, chunkSize, dontCompress, destination)
 	if err != nil {
 		return 0, err
 	}
