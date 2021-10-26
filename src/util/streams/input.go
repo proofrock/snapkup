@@ -15,6 +15,7 @@ type InputStream struct {
 	key        []byte
 	compressed bool
 	chunkSize  int
+	chunkNum   uint32
 	chunk      []byte
 	index      int
 	finished   bool
@@ -33,7 +34,7 @@ func NewIS(key []byte, r io.ReadCloser) (*InputStream, error) {
 		return nil, errReadingMagicNumber
 	}
 	compressed := bytes.Compare(wannabeMagicNumber, mnCompressed) == 0
-	return &InputStream{r, key, compressed, 0, nil, 0, false}, nil
+	return &InputStream{r, key, compressed, 0, 0, nil, 0, false}, nil
 }
 
 func (is *InputStream) unprocess() (finished bool, errDecrypting error) {
@@ -59,7 +60,8 @@ func (is *InputStream) unprocess() (finished bool, errDecrypting error) {
 		return false, errReadingEnc
 	}
 
-	compressed, errDecrypting := aead.Open(nil, nonce, enc, nil)
+	compressed, errDecrypting := aead.Open(nil, nonce, enc, uint32ToBytes(is.chunkNum))
+	is.chunkNum++
 	if errDecrypting != nil {
 		return false, errDecrypting
 	}

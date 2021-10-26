@@ -20,6 +20,7 @@ type OutputStream struct {
 	key        []byte
 	chunkSize  int
 	zLevel     int
+	chunkNum   uint32
 	chunk      []byte
 	index      int
 	finished   bool
@@ -44,7 +45,7 @@ func NewOS(key []byte, chunkSize int, compressed bool, w io.Writer) (*OutputStre
 		return nil, errWritingMagicNumber
 	}
 
-	return &OutputStream{w, key, chunkSize, zLevel, make([]byte, chunkSize), 0, false}, nil
+	return &OutputStream{w, key, chunkSize, zLevel, 0, make([]byte, chunkSize), 0, false}, nil
 }
 
 func (os *OutputStream) process() error {
@@ -71,7 +72,8 @@ func (os *OutputStream) process() error {
 	encLen := len(compressed) + aead.Overhead()
 	encrypted := make([]byte, encLen)
 
-	encrypted = aead.Seal(nil, nonce, compressed, nil)
+	encrypted = aead.Seal(nil, nonce, compressed, uint32ToBytes(os.chunkNum))
+	os.chunkNum++
 	if errWritingLen := binary.Write(os.underlying, binary.LittleEndian, int64(encLen+len(nonce))); errWritingLen != nil {
 		return errWritingLen
 	}
