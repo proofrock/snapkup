@@ -10,6 +10,11 @@ import (
 	"time"
 )
 
+func init() {
+	println("Init random seed")
+	rnd.Seed(time.Now().Unix())
+}
+
 const MEGA = 1024 * 1024
 
 func TestRW(t *testing.T) {
@@ -19,7 +24,6 @@ func TestRW(t *testing.T) {
 	dataLen := 33 * MEGA
 
 	data := make([]byte, dataLen)
-	rnd.Seed(time.Now().Unix())
 	rnd.Read(data)
 
 	defer func() {
@@ -143,7 +147,6 @@ func TestNoZ(t *testing.T) {
 	dataLen := 33 * MEGA
 
 	data := make([]byte, dataLen)
-	rnd.Seed(time.Now().Unix())
 	rnd.Read(data)
 
 	defer func() {
@@ -210,7 +213,6 @@ func TestEOF(t *testing.T) {
 	func() {
 		dataLen := 2050
 		data := make([]byte, dataLen)
-		rnd.Seed(time.Now().Unix())
 		rnd.Read(data)
 
 		f, _ := os.Create("ciaao")
