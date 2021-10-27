@@ -31,16 +31,15 @@ type info struct {
 	Referenced int64
 }
 
-func Info(snap *int) func(modl *model.Model) error {
+func Info(snap int) func(modl *model.Model) error {
 	return func(modl *model.Model) error {
-		var nfo info
-
-		var _snap int
-		if snap == nil {
-			_snap = -1
-		} else {
-			_snap = *snap
+		if snap > -1 {
+			if findSnap(modl, snap) == -1 {
+				return fmt.Errorf("Snap %d not found in pool", snap)
+			}
 		}
+
+		var nfo info
 
 		blobs := make(map[string]model.Blob)
 		for _, blob := range modl.Blobs {
@@ -55,7 +54,7 @@ func Info(snap *int) func(modl *model.Model) error {
 				nfo.Referenced += blobs[item.Hash].BlobSize
 				alreadyDiscoveredBlobs[item.Hash] = true
 			}
-			if _snap == -1 || item.Snap == _snap {
+			if snap <= -1 || item.Snap == snap {
 				if _, alreadyDiscovered := alreadyDiscoveredBlobsForSnap[item.Hash]; !alreadyDiscovered {
 					nfo.StoredSize += blobs[item.Hash].BlobSize
 					alreadyDiscoveredBlobsForSnap[item.Hash] = true
@@ -72,11 +71,13 @@ func Info(snap *int) func(modl *model.Model) error {
 		fmt.Printf("Files                   : %d\n", nfo.Files)
 		fmt.Printf("Directories             : %d\n", nfo.Dirs)
 		fmt.Printf("Size                    : %s\n", fmtBytes(nfo.Size))
-		if _snap > -1 {
+		if snap > -1 {
 			fmt.Printf("Stored size             : %s\n", fmtBytes(nfo.StoredSize))
 		}
 		fmt.Printf("Tot. stored (all snaps) : %s\n", fmtBytes(nfo.TotStored))
-		fmt.Printf("Can be garbage collected: %s\n", fmtBytes(nfo.TotStored-nfo.Referenced))
+		if snap <= -1 {
+			fmt.Printf("Can be garbage collected: %s\n", fmtBytes(nfo.TotStored-nfo.Referenced))
+		}
 
 		return nil
 	}

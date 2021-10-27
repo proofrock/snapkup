@@ -25,6 +25,10 @@ type item struct {
 
 func Restore(bkpDir string, snap int, restoreDir string, restorePrefixPath *string) func(modl *model.Model) error {
 	return func(modl *model.Model) error {
+		if findSnap(modl, snap) == -1 {
+			return fmt.Errorf("Snap %d not found in pool", snap)
+		}
+
 		if isEmpty, errCheckingEmpty := util.IsEmpty(restoreDir); errCheckingEmpty != nil {
 			return errCheckingEmpty
 		} else if !isEmpty {

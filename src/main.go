@@ -49,7 +49,7 @@ var (
 	restorePrefixPath = restoreCmd.Flag("prefix-path", "Only the files whose path starts with this prefix are considered.").String()
 
 	infoSnapCmd = snpCmd.Command("info", "Gives relevant information on a snap or on all snaps.")
-	snapToInfo  = infoSnapCmd.Arg("snap", "The snap to give info about.").Int()
+	snapToInfo  = infoSnapCmd.Arg("snap", "The snap to give info about.").Default("-1").Int()
 
 	listSnapCmd = snpCmd.Command("filelist", "Prints the list of files for a snap.").Alias("fl")
 	snapToList  = listSnapCmd.Arg("snap", "The snap to list files for.").Required().Int()
@@ -118,7 +118,7 @@ func app() (errApp error) {
 			}
 
 		case infoSnapCmd.FullCommand():
-			errApp = exec(bkpDir, false, snap.Info(snapToInfo))
+			errApp = exec(bkpDir, false, snap.Info(*snapToInfo))
 
 		case listSnapCmd.FullCommand():
 			errApp = exec(bkpDir, false, snap.FileList(*snapToList))

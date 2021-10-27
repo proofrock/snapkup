@@ -8,21 +8,23 @@ import (
 
 func Delete(toDel int) func(modl *model.Model) error {
 	return func(modl *model.Model) error {
-		var found = -1
-		for i, snap := range modl.Snaps {
-			if snap.Id == toDel {
-				found = i
-				break
-			}
-		}
+		var found = findSnap(modl, toDel)
 
 		if found == -1 {
-			return fmt.Errorf("Snap not found in pool (%d)", toDel)
+			return fmt.Errorf("Snap %d not found in pool", toDel)
 		}
+
+		var nuItems []model.Item
+		for _, item := range modl.Items {
+			if item.Snap != toDel {
+				nuItems = append(nuItems, item)
+			}
+		}
+		modl.Items = nuItems
 
 		modl.Snaps = append(modl.Snaps[:found], modl.Snaps[found+1:]...)
 
-		fmt.Printf("Snap correctly deleted (%d)\n", toDel)
+		fmt.Printf("Snap %d correctly deleted\n", toDel)
 
 		return nil
 	}

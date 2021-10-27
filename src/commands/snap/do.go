@@ -59,7 +59,7 @@ func Do(bkpDir string, dontCompress bool, label string) func(modl *model.Model) 
 			modl.Items = append(modl.Items, model.Item{Path: file.FullPath, Snap: snap, Hash: file.Hash, IsDir: file.IsDir, Mode: int32(file.Mode.Perm()), ModTime: file.LastModified})
 
 			if !file.IsDir {
-				if curHashes[file.Hash] {
+				if !curHashes[file.Hash] {
 					// hash not yet recorded, mark it for addition
 					newHashes[file.Hash] = finf{file.FullPath, file.Size}
 					curHashes[file.Hash] = true
@@ -69,23 +69,25 @@ func Do(bkpDir string, dontCompress bool, label string) func(modl *model.Model) 
 
 		fmt.Printf("%d new blobs to write\n", len(newHashes))
 
-		// Iterates over the blobs to write, and writes them (compressing or not)
-		i := 1
-		tot := len(newHashes)
-		bar := pb.Full.Start(tot)
-		for hash, finfo := range newHashes {
-			pathDest := path.Join(bkpDir, hash[0:1], hash)
+		if len(newHashes) > 0 {
+			// Iterates over the blobs to write, and writes them (compressing or not)
+			i := 1
+			tot := len(newHashes)
+			bar := pb.Full.Start(tot)
+			for hash, finfo := range newHashes {
+				pathDest := path.Join(bkpDir, hash[0:1], hash)
 
-			bar.Increment()
-			i++
-			blobSize, errCopying := store(finfo.FullPath, pathDest, dontCompress)
-			if errCopying != nil {
-				return errCopying
+				bar.Increment()
+				i++
+				blobSize, errCopying := store(finfo.FullPath, pathDest, dontCompress)
+				if errCopying != nil {
+					return errCopying
+				}
+
+				modl.Blobs = append(modl.Blobs, model.Blob{Hash: hash, Size: finfo.Size, BlobSize: blobSize})
 			}
-
-			modl.Blobs = append(modl.Blobs, model.Blob{Hash: hash, Size: finfo.Size, BlobSize: blobSize})
+			bar.Finish()
 		}
-		bar.Finish()
 
 		// TODO write this only after actual commit
 		fmt.Printf("Snap %d correctly created\n", snap)
