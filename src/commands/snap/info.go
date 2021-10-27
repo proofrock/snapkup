@@ -68,15 +68,15 @@ func Info(snap int) func(modl *model.Model) error {
 			}
 		}
 
-		fmt.Printf("Files                   : %d\n", nfo.Files)
-		fmt.Printf("Directories             : %d\n", nfo.Dirs)
-		fmt.Printf("Size                    : %s\n", fmtBytes(nfo.Size))
+		fmt.Printf("Files                    : %d\n", nfo.Files)
+		fmt.Printf("Directories              : %d\n", nfo.Dirs)
+		fmt.Printf("Size                     : %s\n", fmtBytes(nfo.Size))
 		if snap > -1 {
-			fmt.Printf("Stored size             : %s\n", fmtBytes(nfo.StoredSize))
+			fmt.Printf("Stored size              : %s\n", fmtBytes(nfo.StoredSize))
 		}
-		fmt.Printf("Tot. stored (all snaps) : %s\n", fmtBytes(nfo.TotStored))
+		fmt.Printf("Tot. stored (all snaps)  : %s\n", fmtBytes(nfo.TotStored))
 		if snap <= -1 {
-			fmt.Printf("Can be garbage collected: %s\n", fmtBytes(nfo.TotStored-nfo.Referenced))
+			fmt.Printf("Can be garbage collected : %s\n", fmtBytes(nfo.TotStored-nfo.Referenced))
 		}
 
 		return nil

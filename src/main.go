@@ -10,6 +10,7 @@ import (
 	initcmd "github.com/proofrock/snapkup/commands/init"
 	"github.com/proofrock/snapkup/commands/root"
 	"github.com/proofrock/snapkup/commands/snap"
+	"github.com/proofrock/snapkup/commands/storage"
 	"github.com/proofrock/snapkup/model"
 
 	"github.com/proofrock/snapkup/util"
@@ -57,6 +58,10 @@ var (
 	labelSnapCmd   = snpCmd.Command("label", "Sets or changes the label of a snap.").Alias("lbl")
 	snapToLabel    = labelSnapCmd.Arg("snap", "The snap to label.").Required().Int()
 	labelSnapLabel = labelSnapCmd.Arg("label", "The label.").Required().String()
+
+	storageCmd = kingpin.Command("storage", "Commands related to the storage").Alias("f")
+
+	storageGCCmd = storageCmd.Command("garbage-collect", "Deletes dangling files and structures, freeing space.").Alias("gc")
 )
 
 func exec(pwd, bkpDir string, save bool, block func(modl *model.Model) error) error {
@@ -125,6 +130,9 @@ func app(pwd string) (errApp error) {
 
 		case labelSnapCmd.FullCommand():
 			errApp = exec(pwd, bkpDir, true, snap.Label(*snapToLabel, *labelSnapLabel))
+
+		case storageGCCmd.FullCommand():
+			errApp = exec(pwd, bkpDir, true, storage.GarbageCollect(bkpDir))
 		}
 	}
 
