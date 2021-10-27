@@ -48,8 +48,8 @@ var (
 	relDirToRestore   = restoreCmd.Arg("restore-dir", "The dir to restore into. Must exist and be empty.").Required().ExistingDir()
 	restorePrefixPath = restoreCmd.Flag("prefix-path", "Only the files whose path starts with this prefix are considered.").String()
 
-	infoSnapCmd = snpCmd.Command("info", "Gives relevant information on a snap.")
-	snapToInfo  = infoSnapCmd.Arg("snap", "The snap to give info about.").Required().Int()
+	infoSnapCmd = snpCmd.Command("info", "Gives relevant information on a snap or on all snaps.")
+	snapToInfo  = infoSnapCmd.Arg("snap", "The snap to give info about.").Int()
 
 	listSnapCmd = snpCmd.Command("filelist", "Prints the list of files for a snap.").Alias("fl")
 	snapToList  = listSnapCmd.Arg("snap", "The snap to list files for.").Required().Int()
@@ -99,7 +99,7 @@ func app() (errApp error) {
 			errApp = exec(bkpDir, false, root.List())
 
 		case delRootCmd.FullCommand():
-			errApp = exec(bkpDir, true, root.Del(*rootToDel))
+			errApp = exec(bkpDir, true, root.Delete(*rootToDel))
 
 		case snapCmd.FullCommand():
 			errApp = exec(bkpDir, true, snap.Do(bkpDir, *snapNoCompress, *snapLabel))
@@ -114,11 +114,11 @@ func app() (errApp error) {
 			if dirToRestore, errAbsolutizing := filepath.Abs(*relDirToRestore); errAbsolutizing != nil {
 				errApp = errAbsolutizing
 			} else {
-				errApp = exec(bkpDir, false, snap.Restore(*snapToRestore, dirToRestore, restorePrefixPath))
+				errApp = exec(bkpDir, false, snap.Restore(bkpDir, *snapToRestore, dirToRestore, restorePrefixPath))
 			}
 
 		case infoSnapCmd.FullCommand():
-			errApp = exec(bkpDir, false, snap.Info(*snapToInfo))
+			errApp = exec(bkpDir, false, snap.Info(snapToInfo))
 
 		case listSnapCmd.FullCommand():
 			errApp = exec(bkpDir, false, snap.FileList(*snapToList))

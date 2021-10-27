@@ -10,7 +10,7 @@ func FileList(snap int) func(modl *model.Model) error {
 	return func(modl *model.Model) error {
 		var list []string
 		for _, item := range modl.Items {
-			if item.Snap == uint32(snap) {
+			if item.Snap == snap {
 				list = append(list, item.Path)
 			}
 		}

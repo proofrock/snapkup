@@ -13,24 +13,24 @@ import (
 )
 
 type Snap struct {
-	Id        uint32 `json:"id"`
+	Id        int    `json:"id"`
 	Timestamp int64  `json:"timestamp"`
 	Label     string `json:"label"`
 }
 
 type Item struct {
 	Path    string `json:"path"`
-	Snap    uint32 `json:"snap"`
+	Snap    int    `json:"snap"`
 	Hash    string `json:"hash"`
 	IsDir   bool   `json:"isDir"`
-	Mode    uint32 `json:"mode"`
-	ModTime uint64 `json:"modTime"`
+	Mode    int32  `json:"mode"`
+	ModTime int64  `json:"modTime"`
 }
 
 type Blob struct {
 	Hash     string `json:"hash"`
-	Size     uint64 `json:"size"`
-	BlobSize uint64 `json:"blobSize"`
+	Size     int64  `json:"size"`
+	BlobSize int64  `json:"blobSize"`
 }
 
 type Root struct {

@@ -27,7 +27,7 @@ func Do(bkpDir string, dontCompress bool, label string) func(modl *model.Model) 
 		sort.Slice(files, func(i int, j int) bool { return files[i].FullPath < files[j].FullPath })
 
 		// Find next snap (max + 1)
-		var snap uint32 = 0
+		var snap = 0
 		for _, snp := range modl.Snaps {
 			if snp.Id >= snap {
 				snap = snp.Id + 1
@@ -56,7 +56,7 @@ func Do(bkpDir string, dontCompress bool, label string) func(modl *model.Model) 
 
 		newHashes := make(map[string]finf) // [hash]file_info
 		for _, file := range files {
-			modl.Items = append(modl.Items, model.Item{Path: file.FullPath, Snap: snap, Hash: file.Hash, IsDir: file.IsDir, Mode: uint32(file.Mode), ModTime: uint64(file.LastModified)})
+			modl.Items = append(modl.Items, model.Item{Path: file.FullPath, Snap: snap, Hash: file.Hash, IsDir: file.IsDir, Mode: int32(file.Mode.Perm()), ModTime: file.LastModified})
 
 			if !file.IsDir {
 				if curHashes[file.Hash] {
@@ -83,7 +83,7 @@ func Do(bkpDir string, dontCompress bool, label string) func(modl *model.Model) 
 				return errCopying
 			}
 
-			modl.Blobs = append(modl.Blobs, model.Blob{Hash: hash, Size: uint64(finfo.Size), BlobSize: uint64(blobSize)})
+			modl.Blobs = append(modl.Blobs, model.Blob{Hash: hash, Size: finfo.Size, BlobSize: blobSize})
 		}
 		bar.Finish()
 

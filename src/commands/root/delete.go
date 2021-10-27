@@ -6,12 +6,13 @@ import (
 	"github.com/proofrock/snapkup/model"
 )
 
-func Del(toDel string) func(modl *model.Model) error {
+func Delete(toDel string) func(modl *model.Model) error {
 	return func(modl *model.Model) error {
 		var found = -1
 		for i, root := range modl.Roots {
 			if root.Path == toDel {
 				found = i
+				break
 			}
 		}
 
@@ -21,7 +22,7 @@ func Del(toDel string) func(modl *model.Model) error {
 
 		modl.Roots = append(modl.Roots[:found], modl.Roots[found+1:]...)
 
-		println("Root correctly deleted (", toDel, ")")
+		fmt.Printf("Root correctly deleted (%s)\n", toDel)
 
 		return nil
 	}
