@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	_ "database/sql"
 	"encoding/binary"
+	"encoding/json"
 	"os"
 	"path"
 
@@ -12,37 +13,37 @@ import (
 )
 
 type Snap struct {
-	Id        uint32
-	Timestamp int64
-	Label     string
+	Id        uint32 `json:"id"`
+	Timestamp int64  `json:"timestamp"`
+	Label     string `json:"label"`
 }
 
 type Item struct {
-	Path    string
-	Snap    uint32
-	Hash    string
-	IsDir   bool
-	Mode    uint32
-	ModTime uint64
+	Path    string `json:"path"`
+	Snap    uint32 `json:"snap"`
+	Hash    string `json:"hash"`
+	IsDir   bool   `json:"isDir"`
+	Mode    uint32 `json:"mode"`
+	ModTime uint64 `json:"modTime"`
 }
 
 type Blob struct {
-	Hash     string
-	Size     uint64
-	BlobSize uint64
+	Hash     string `json:"hash"`
+	Size     uint64 `json:"size"`
+	BlobSize uint64 `json:"blobSize"`
 }
 
 type Root struct {
-	Path string
+	Path string `json:"path"`
 }
 
 type Model struct {
-	Key4Hashes []byte
-	Key4Enc    []byte
-	Snaps      []Snap
-	Items      []Item
-	Blobs      []Blob
-	Roots      []Root
+	Key4Hashes []byte `json:"key4hashes"`
+	Key4Enc    []byte `json:"key4enc"`
+	Snaps      []Snap `json:"snaps"`
+	Items      []Item `json:"items"`
+	Blobs      []Blob `json:"blobs"`
+	Roots      []Root `json:"roots"`
 }
 
 const modelFileName = "snapkup.dat"
@@ -77,99 +78,18 @@ func LoadModel(key []byte, dir string) (modl *Model, err error) {
 	}
 	defer is.Close()
 
+	var lenMarshaled int32
+	if errRdr := binary.Read(is, binary.LittleEndian, &lenMarshaled); errRdr != nil {
+		return nil, errRdr
+	}
+	marshaled := make([]byte, lenMarshaled)
+	if _, errRdr := is.Read(marshaled); errRdr != nil {
+		return nil, errRdr
+	}
+
 	var ret Model
-
-	ret.Key4Enc = make([]byte, 32)
-	if _, errRdr := is.Read(ret.Key4Enc); errRdr != nil {
-		return nil, errRdr
-	}
-
-	ret.Key4Hashes = make([]byte, 32)
-	if _, errRdr := is.Read(ret.Key4Hashes); errRdr != nil {
-		return nil, errRdr
-	}
-
-	var num int32
-
-	if errRdr := binary.Read(is, binary.LittleEndian, &num); errRdr != nil {
-		return nil, errRdr
-	}
-	for i := int32(0); i < num; i++ {
-		var itm Snap
-		if errRdr := binary.Read(is, binary.LittleEndian, &itm.Id); errRdr != nil {
-			return nil, errRdr
-		}
-		if errRdr := binary.Read(is, binary.LittleEndian, &itm.Timestamp); errRdr != nil {
-			return nil, errRdr
-		}
-		if str, errRdr := readString(is); errRdr != nil {
-			return nil, errRdr
-		} else {
-			itm.Label = str
-		}
-		ret.Snaps = append(ret.Snaps, itm)
-	}
-
-	if errRdr := binary.Read(is, binary.LittleEndian, &num); errRdr != nil {
-		return nil, errRdr
-	}
-	for i := int32(0); i < num; i++ {
-		var itm Item
-		if str, errRdr := readString(is); errRdr != nil {
-			return nil, errRdr
-		} else {
-			itm.Path = str
-		}
-		if errRdr := binary.Read(is, binary.LittleEndian, &itm.Snap); errRdr != nil {
-			return nil, errRdr
-		}
-		if str, errRdr := readString(is); errRdr != nil {
-			return nil, errRdr
-		} else {
-			itm.Hash = str
-		}
-		if errRdr := binary.Read(is, binary.LittleEndian, &itm.IsDir); errRdr != nil {
-			return nil, errRdr
-		}
-		if errRdr := binary.Read(is, binary.LittleEndian, &itm.Mode); errRdr != nil {
-			return nil, errRdr
-		}
-		if errRdr := binary.Read(is, binary.LittleEndian, &itm.ModTime); errRdr != nil {
-			return nil, errRdr
-		}
-		ret.Items = append(ret.Items, itm)
-	}
-
-	if errRdr := binary.Read(is, binary.LittleEndian, &num); errRdr != nil {
-		return nil, errRdr
-	}
-	for i := int32(0); i < num; i++ {
-		var itm Blob
-		if str, errRdr := readString(is); errRdr != nil {
-			return nil, errRdr
-		} else {
-			itm.Hash = str
-		}
-		if errRdr := binary.Read(is, binary.LittleEndian, &itm.Size); errRdr != nil {
-			return nil, errRdr
-		}
-		if errRdr := binary.Read(is, binary.LittleEndian, &itm.BlobSize); errRdr != nil {
-			return nil, errRdr
-		}
-		ret.Blobs = append(ret.Blobs, itm)
-	}
-
-	if errRdr := binary.Read(is, binary.LittleEndian, &num); errRdr != nil {
-		return nil, errRdr
-	}
-	for i := int32(0); i < num; i++ {
-		var itm Root
-		if str, errRdr := readString(is); errRdr != nil {
-			return nil, errRdr
-		} else {
-			itm.Path = str
-		}
-		ret.Roots = append(ret.Roots, itm)
+	if errUnmarshaling := json.Unmarshal(marshaled, &ret); errUnmarshaling != nil {
+		return nil, errUnmarshaling
 	}
 
 	return &ret, nil
@@ -190,75 +110,16 @@ func SaveModel(key []byte, dir string, modl Model) error {
 	}
 	defer ous.Close()
 
-	if _, errWrt := ous.Write(modl.Key4Enc); errWrt != nil {
-		return errWrt
+	marshaled, errMarshaling := json.Marshal(modl)
+	if errMarshaling != nil {
+		return errMarshaling
 	}
 
-	if _, errWrt := ous.Write(modl.Key4Hashes); errWrt != nil {
+	if errWrt := binary.Write(ous, binary.LittleEndian, int32(len(marshaled))); errWrt != nil {
 		return errWrt
 	}
-
-	if errWrt := binary.Write(ous, binary.LittleEndian, int32(len(modl.Snaps))); errWrt != nil {
+	if _, errWrt := ous.Write(marshaled); errWrt != nil {
 		return errWrt
-	}
-	for _, snap := range modl.Snaps {
-		if errWrt := binary.Write(ous, binary.LittleEndian, snap.Id); errWrt != nil {
-			return errWrt
-		}
-		if errWrt := binary.Write(ous, binary.LittleEndian, snap.Timestamp); errWrt != nil {
-			return errWrt
-		}
-		if errWrt := writeString(ous, snap.Label); errWrt != nil {
-			return errWrt
-		}
-	}
-
-	if errWrt := binary.Write(ous, binary.LittleEndian, int32(len(modl.Items))); errWrt != nil {
-		return errWrt
-	}
-	for _, item := range modl.Items {
-		if errWrt := writeString(ous, item.Path); errWrt != nil {
-			return errWrt
-		}
-		if errWrt := binary.Write(ous, binary.LittleEndian, item.Snap); errWrt != nil {
-			return errWrt
-		}
-		if errWrt := writeString(ous, item.Hash); errWrt != nil {
-			return errWrt
-		}
-		if errWrt := binary.Write(ous, binary.LittleEndian, item.IsDir); errWrt != nil {
-			return errWrt
-		}
-		if errWrt := binary.Write(ous, binary.LittleEndian, item.Mode); errWrt != nil {
-			return errWrt
-		}
-		if errWrt := binary.Write(ous, binary.LittleEndian, item.ModTime); errWrt != nil {
-			return errWrt
-		}
-	}
-
-	if errWrt := binary.Write(ous, binary.LittleEndian, int32(len(modl.Blobs))); errWrt != nil {
-		return errWrt
-	}
-	for _, blob := range modl.Blobs {
-		if errWrt := writeString(ous, blob.Hash); errWrt != nil {
-			return errWrt
-		}
-		if errWrt := binary.Write(ous, binary.LittleEndian, blob.Size); errWrt != nil {
-			return errWrt
-		}
-		if errWrt := binary.Write(ous, binary.LittleEndian, blob.BlobSize); errWrt != nil {
-			return errWrt
-		}
-	}
-
-	if errWrt := binary.Write(ous, binary.LittleEndian, int32(len(modl.Roots))); errWrt != nil {
-		return errWrt
-	}
-	for _, root := range modl.Roots {
-		if errWrt := writeString(ous, root.Path); errWrt != nil {
-			return errWrt
-		}
 	}
 
 	if errClosing := ous.Close(); errClosing != nil {
