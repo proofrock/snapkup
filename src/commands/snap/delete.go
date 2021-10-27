@@ -1,14 +1,37 @@
-package delsnap
+package snap
 
 import (
-	"database/sql"
 	"fmt"
-	"os"
-	"path"
 
-	"github.com/proofrock/snapkup/util"
+	"github.com/proofrock/snapkup/model"
 )
 
+func Delete(toDel int) func(modl *model.Model) error {
+	return func(modl *model.Model) error {
+		var found = findSnap(modl, toDel)
+
+		if found == -1 {
+			return fmt.Errorf("Snap %d not found in pool", toDel)
+		}
+
+		var nuItems []model.Item
+		for _, item := range modl.Items {
+			if item.Snap != toDel {
+				nuItems = append(nuItems, item)
+			}
+		}
+		modl.Items = nuItems
+
+		modl.Snaps = append(modl.Snaps[:found], modl.Snaps[found+1:]...)
+
+		fmt.Printf("Snap %d correctly deleted\n", toDel)
+
+		return nil
+	}
+}
+
+// TODO garbage collection
+/*
 func DelSnap(bkpDir string, toDel int) error {
 	dbPath, errComposingDbPath := util.DbFile(bkpDir)
 	if errComposingDbPath != nil {
@@ -76,3 +99,4 @@ func DelSnap(bkpDir string, toDel int) error {
 
 	return nil
 }
+*/

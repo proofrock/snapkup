@@ -7,17 +7,10 @@ import (
 
 	"gopkg.in/alecthomas/kingpin.v2"
 
-	addroot "github.com/proofrock/snapkup/commands/add_root"
-	delroot "github.com/proofrock/snapkup/commands/del_root"
-	delsnaps "github.com/proofrock/snapkup/commands/del_snap"
-	"github.com/proofrock/snapkup/commands/info_snap"
 	initcmd "github.com/proofrock/snapkup/commands/init"
-	labelsnap "github.com/proofrock/snapkup/commands/label_snap"
-	listroots "github.com/proofrock/snapkup/commands/list_roots"
-	"github.com/proofrock/snapkup/commands/list_snap"
-	listsnaps "github.com/proofrock/snapkup/commands/list_snaps"
-	"github.com/proofrock/snapkup/commands/restore"
-	snap "github.com/proofrock/snapkup/commands/snap"
+	"github.com/proofrock/snapkup/commands/root"
+	"github.com/proofrock/snapkup/commands/snap"
+	"github.com/proofrock/snapkup/model"
 
 	"github.com/proofrock/snapkup/util"
 )
@@ -55,8 +48,8 @@ var (
 	relDirToRestore   = restoreCmd.Arg("restore-dir", "The dir to restore into. Must exist and be empty.").Required().ExistingDir()
 	restorePrefixPath = restoreCmd.Flag("prefix-path", "Only the files whose path starts with this prefix are considered.").String()
 
-	infoSnapCmd = snpCmd.Command("info", "Gives relevant information on a snap.")
-	snapToInfo  = infoSnapCmd.Arg("snap", "The snap to give info about.").Required().Int()
+	infoSnapCmd = snpCmd.Command("info", "Gives relevant information on a snap or on all snaps.")
+	snapToInfo  = infoSnapCmd.Arg("snap", "The snap to give info about.").Default("-1").Int()
 
 	listSnapCmd = snpCmd.Command("filelist", "Prints the list of files for a snap.").Alias("fl")
 	snapToList  = listSnapCmd.Arg("snap", "The snap to list files for.").Required().Int()
@@ -65,6 +58,22 @@ var (
 	snapToLabel    = labelSnapCmd.Arg("snap", "The snap to label.").Required().Int()
 	labelSnapLabel = labelSnapCmd.Arg("label", "The label.").Required().String()
 )
+
+func exec(bkpDir string, save bool, block func(modl *model.Model) error) error {
+	modl, errLoadingModel := model.LoadModel(util.FakeKey, bkpDir)
+	if errLoadingModel != nil {
+		return errLoadingModel
+	}
+	if errExecutingPayload := block(modl); errExecutingPayload != nil {
+		return errExecutingPayload
+	}
+	if save {
+		if errSavingModel := model.SaveModel(util.FakeKey, bkpDir, *modl); errSavingModel != nil {
+			return errSavingModel
+		}
+	}
+	return nil
+}
 
 func app() (errApp error) {
 	kingpin.Version(util.Banner(version))
@@ -77,45 +86,45 @@ func app() (errApp error) {
 		switch cliResult {
 
 		case initCmd.FullCommand():
-			errApp = initcmd.Init(bkpDir)
+			errApp = initcmd.Init(util.FakeKey, bkpDir)
 
 		case addRootCmd.FullCommand():
 			if rootToAdd, errAbsolutizing := filepath.Abs(*relRootToAdd); errAbsolutizing != nil {
 				errApp = errAbsolutizing
 			} else {
-				errApp = addroot.AddRoot(bkpDir, rootToAdd)
+				errApp = exec(bkpDir, true, root.Add(rootToAdd))
 			}
 
 		case listRootsCmd.FullCommand():
-			errApp = listroots.ListRoots(bkpDir)
+			errApp = exec(bkpDir, false, root.List())
 
 		case delRootCmd.FullCommand():
-			errApp = delroot.DelRoot(bkpDir, *rootToDel)
+			errApp = exec(bkpDir, true, root.Delete(*rootToDel))
 
 		case snapCmd.FullCommand():
-			errApp = snap.Snap(bkpDir, *snapNoCompress, *snapLabel)
+			errApp = exec(bkpDir, true, snap.Do(bkpDir, *snapNoCompress, *snapLabel))
 
 		case listSnapsCmd.FullCommand():
-			errApp = listsnaps.ListSnaps(bkpDir)
+			errApp = exec(bkpDir, false, snap.List())
 
 		case delSnapCmd.FullCommand():
-			errApp = delsnaps.DelSnap(bkpDir, *snapToDel)
+			errApp = exec(bkpDir, true, snap.Delete(*snapToDel))
 
 		case restoreCmd.FullCommand():
 			if dirToRestore, errAbsolutizing := filepath.Abs(*relDirToRestore); errAbsolutizing != nil {
 				errApp = errAbsolutizing
 			} else {
-				errApp = restore.Restore(bkpDir, *snapToRestore, dirToRestore, restorePrefixPath)
+				errApp = exec(bkpDir, false, snap.Restore(bkpDir, *snapToRestore, dirToRestore, restorePrefixPath))
 			}
 
 		case infoSnapCmd.FullCommand():
-			errApp = info_snap.InfoSnap(bkpDir, *snapToInfo)
+			errApp = exec(bkpDir, false, snap.Info(*snapToInfo))
 
 		case listSnapCmd.FullCommand():
-			errApp = list_snap.ListSnap(bkpDir, *snapToList)
+			errApp = exec(bkpDir, false, snap.FileList(*snapToList))
 
 		case labelSnapCmd.FullCommand():
-			errApp = labelsnap.LabelSnap(bkpDir, *snapToLabel, *labelSnapLabel)
+			errApp = exec(bkpDir, true, snap.Label(*snapToLabel, *labelSnapLabel))
 		}
 	}
 
