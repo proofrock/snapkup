@@ -62,7 +62,7 @@ func Restore(bkpDir string, snap int, restoreDir string, restorePrefixPath *stri
 					return errMkingDir
 				}
 
-				if errCopying := restore(source, dest); errCopying != nil {
+				if errCopying := restore(modl.Key4Enc, source, dest); errCopying != nil {
 					return errCopying
 				}
 			} else {
@@ -91,9 +91,7 @@ func Restore(bkpDir string, snap int, restoreDir string, restorePrefixPath *stri
 	}
 }
 
-func restore(src string, dst string) error {
-	key := make([]byte, 32) // TODO implment
-
+func restore(key []byte, src string, dst string) error {
 	if _, errStatsing := os.Stat(dst); !os.IsNotExist(errStatsing) {
 		// an identical file already exists
 		return nil

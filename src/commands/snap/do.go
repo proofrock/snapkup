@@ -79,7 +79,7 @@ func Do(bkpDir string, dontCompress bool, label string) func(modl *model.Model) 
 
 				bar.Increment()
 				i++
-				blobSize, errCopying := store(finfo.FullPath, pathDest, dontCompress)
+				blobSize, errCopying := store(modl.Key4Enc, finfo.FullPath, pathDest, dontCompress)
 				if errCopying != nil {
 					return errCopying
 				}
@@ -190,9 +190,7 @@ func fileHash(path string, key []byte) (string, error) {
 	return strings.ToLower(hex.EncodeToString(ret)), nil
 }
 
-func store(src string, dst string, dontCompress bool) (blobSize int64, err error) {
-	key := make([]byte, 32) // TODO implment
-
+func store(key []byte, src string, dst string, dontCompress bool) (blobSize int64, err error) {
 	source, errOpening := os.Open(src)
 	if errOpening != nil {
 		err = errOpening
