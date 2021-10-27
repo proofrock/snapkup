@@ -10,7 +10,7 @@ import (
 	"github.com/proofrock/snapkup/util"
 )
 
-func Init(key []byte, bkpDir string) error {
+func Init(pwd string, bkpDir string) error {
 	if isEmpty, errCheckingEmpty := util.IsEmpty(bkpDir); errCheckingEmpty != nil {
 		return errCheckingEmpty
 	} else if !isEmpty {
@@ -22,7 +22,7 @@ func Init(key []byte, bkpDir string) error {
 		return errNewData
 	}
 
-	if errSaveModel := model.SaveModel(key, bkpDir, *data); errSaveModel != nil {
+	if errSaveModel := model.SaveModel(pwd, bkpDir, *data); errSaveModel != nil {
 		return errSaveModel
 	}
 

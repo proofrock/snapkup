@@ -59,8 +59,8 @@ var (
 	labelSnapLabel = labelSnapCmd.Arg("label", "The label.").Required().String()
 )
 
-func exec(bkpDir string, save bool, block func(modl *model.Model) error) error {
-	modl, errLoadingModel := model.LoadModel(util.FakeKey, bkpDir)
+func exec(pwd, bkpDir string, save bool, block func(modl *model.Model) error) error {
+	modl, errLoadingModel := model.LoadModel(pwd, bkpDir)
 	if errLoadingModel != nil {
 		return errLoadingModel
 	}
@@ -68,14 +68,14 @@ func exec(bkpDir string, save bool, block func(modl *model.Model) error) error {
 		return errExecutingPayload
 	}
 	if save {
-		if errSavingModel := model.SaveModel(util.FakeKey, bkpDir, *modl); errSavingModel != nil {
+		if errSavingModel := model.SaveModel(pwd, bkpDir, *modl); errSavingModel != nil {
 			return errSavingModel
 		}
 	}
 	return nil
 }
 
-func app() (errApp error) {
+func app(pwd string) (errApp error) {
 	kingpin.Version(util.Banner(version))
 
 	cliResult := kingpin.Parse()
@@ -86,45 +86,45 @@ func app() (errApp error) {
 		switch cliResult {
 
 		case initCmd.FullCommand():
-			errApp = initcmd.Init(util.FakeKey, bkpDir)
+			errApp = initcmd.Init(pwd, bkpDir)
 
 		case addRootCmd.FullCommand():
 			if rootToAdd, errAbsolutizing := filepath.Abs(*relRootToAdd); errAbsolutizing != nil {
 				errApp = errAbsolutizing
 			} else {
-				errApp = exec(bkpDir, true, root.Add(rootToAdd))
+				errApp = exec(pwd, bkpDir, true, root.Add(rootToAdd))
 			}
 
 		case listRootsCmd.FullCommand():
-			errApp = exec(bkpDir, false, root.List())
+			errApp = exec(pwd, bkpDir, false, root.List())
 
 		case delRootCmd.FullCommand():
-			errApp = exec(bkpDir, true, root.Delete(*rootToDel))
+			errApp = exec(pwd, bkpDir, true, root.Delete(*rootToDel))
 
 		case snapCmd.FullCommand():
-			errApp = exec(bkpDir, true, snap.Do(bkpDir, *snapNoCompress, *snapLabel))
+			errApp = exec(pwd, bkpDir, true, snap.Do(bkpDir, *snapNoCompress, *snapLabel))
 
 		case listSnapsCmd.FullCommand():
-			errApp = exec(bkpDir, false, snap.List())
+			errApp = exec(pwd, bkpDir, false, snap.List())
 
 		case delSnapCmd.FullCommand():
-			errApp = exec(bkpDir, true, snap.Delete(*snapToDel))
+			errApp = exec(pwd, bkpDir, true, snap.Delete(*snapToDel))
 
 		case restoreCmd.FullCommand():
 			if dirToRestore, errAbsolutizing := filepath.Abs(*relDirToRestore); errAbsolutizing != nil {
 				errApp = errAbsolutizing
 			} else {
-				errApp = exec(bkpDir, false, snap.Restore(bkpDir, *snapToRestore, dirToRestore, restorePrefixPath))
+				errApp = exec(pwd, bkpDir, false, snap.Restore(bkpDir, *snapToRestore, dirToRestore, restorePrefixPath))
 			}
 
 		case infoSnapCmd.FullCommand():
-			errApp = exec(bkpDir, false, snap.Info(*snapToInfo))
+			errApp = exec(pwd, bkpDir, false, snap.Info(*snapToInfo))
 
 		case listSnapCmd.FullCommand():
-			errApp = exec(bkpDir, false, snap.FileList(*snapToList))
+			errApp = exec(pwd, bkpDir, false, snap.FileList(*snapToList))
 
 		case labelSnapCmd.FullCommand():
-			errApp = exec(bkpDir, true, snap.Label(*snapToLabel, *labelSnapLabel))
+			errApp = exec(pwd, bkpDir, true, snap.Label(*snapToLabel, *labelSnapLabel))
 		}
 	}
 
@@ -132,7 +132,13 @@ func app() (errApp error) {
 }
 
 func main() {
-	if errApp := app(); errApp != nil {
+	pwd := os.Getenv("SNAPKUP_PASSWORD")
+	if pwd == "" {
+		fmt.Fprint(os.Stderr, "ERROR: password not declared\n")
+		os.Exit(1)
+	}
+
+	if errApp := app(pwd); errApp != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: %v\n", errApp)
 		os.Exit(1)
 	}
