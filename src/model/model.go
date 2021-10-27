@@ -38,6 +38,7 @@ type Root struct {
 }
 
 type Model struct {
+	Version    int    `json:"version"`
 	Key4Hashes []byte `json:"key4hashes"`
 	Key4Enc    []byte `json:"key4enc"`
 	Snaps      []Snap `json:"snaps"`
@@ -50,6 +51,9 @@ const modelFileName = "snapkup.dat"
 
 func NewModel() (modl *Model, err error) {
 	var ret Model
+
+	ret.Version = 1
+
 	ret.Key4Enc = make([]byte, 32)
 	if _, err := rand.Read(ret.Key4Enc); err != nil {
 		return nil, err
