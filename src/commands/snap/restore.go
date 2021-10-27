@@ -1,18 +1,57 @@
-package restore
+package snap
 
 import (
-	"database/sql"
-	"fmt"
-	"io/fs"
+	"io"
 	"os"
-	"path"
-	"path/filepath"
-	"strings"
-	"time"
 
-	"github.com/proofrock/snapkup/util"
+	"github.com/proofrock/snapkup/model"
+	"github.com/proofrock/snapkup/util/streams"
 )
 
+func Restore(snap int, restoreDir string, restorePrefixPath *string) func(modl *model.Model) error {
+	return func(modl *model.Model) error {
+		return nil
+	}
+}
+
+func restore(src string, dst string, isCompressed bool) error {
+	key := make([]byte, 32) // TODO implment
+
+	if _, errStatsing := os.Stat(dst); !os.IsNotExist(errStatsing) {
+		// an identical file already exists
+		return nil
+	}
+
+	source, errOpening := os.Open(src)
+	if errOpening != nil {
+		return errOpening
+	}
+	defer source.Close()
+
+	destination, errCreating := os.Create(dst)
+	if errCreating != nil {
+		return errCreating
+	}
+	defer destination.Close()
+
+	ins, err := streams.NewIS(key, source)
+	if err != nil {
+		return err
+	}
+	defer ins.Close()
+
+	if _, err = io.Copy(destination, ins); err != nil {
+		return err
+	}
+
+	if err = ins.Close(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+/*
 const sql1 = `
 SELECT i.PATH, i.HASH, i.IS_DIR, COALESCE(b.IS_COMPRESSED, 0), i.MODE, i.MOD_TIME
   FROM ITEMS i
@@ -118,3 +157,4 @@ func Restore(bkpDir string, snap int, restoreDir string, restorePrefixPath *stri
 
 	return nil
 }
+*/

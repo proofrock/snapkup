@@ -7,15 +7,9 @@ import (
 
 	"gopkg.in/alecthomas/kingpin.v2"
 
-	delsnaps "github.com/proofrock/snapkup/commands/del_snap"
-	"github.com/proofrock/snapkup/commands/info_snap"
 	initcmd "github.com/proofrock/snapkup/commands/init"
-	labelsnap "github.com/proofrock/snapkup/commands/label_snap"
-	"github.com/proofrock/snapkup/commands/list_snap"
-	listsnaps "github.com/proofrock/snapkup/commands/list_snaps"
-	"github.com/proofrock/snapkup/commands/restore"
 	"github.com/proofrock/snapkup/commands/root"
-	snap "github.com/proofrock/snapkup/commands/snap"
+	"github.com/proofrock/snapkup/commands/snap"
 	"github.com/proofrock/snapkup/model"
 
 	"github.com/proofrock/snapkup/util"
@@ -108,29 +102,29 @@ func app() (errApp error) {
 			errApp = exec(bkpDir, true, root.Del(*rootToDel))
 
 		case snapCmd.FullCommand():
-			errApp = snap.Snap(bkpDir, *snapNoCompress, *snapLabel)
+			errApp = exec(bkpDir, true, snap.Do(bkpDir, *snapNoCompress, *snapLabel))
 
 		case listSnapsCmd.FullCommand():
-			errApp = listsnaps.ListSnaps(bkpDir)
+			errApp = exec(bkpDir, false, snap.List())
 
 		case delSnapCmd.FullCommand():
-			errApp = delsnaps.DelSnap(bkpDir, *snapToDel)
+			errApp = exec(bkpDir, true, snap.Delete(*snapToDel))
 
 		case restoreCmd.FullCommand():
 			if dirToRestore, errAbsolutizing := filepath.Abs(*relDirToRestore); errAbsolutizing != nil {
 				errApp = errAbsolutizing
 			} else {
-				errApp = restore.Restore(bkpDir, *snapToRestore, dirToRestore, restorePrefixPath)
+				errApp = exec(bkpDir, false, snap.Restore(*snapToRestore, dirToRestore, restorePrefixPath))
 			}
 
 		case infoSnapCmd.FullCommand():
-			errApp = info_snap.InfoSnap(bkpDir, *snapToInfo)
+			errApp = exec(bkpDir, false, snap.Info(*snapToInfo))
 
 		case listSnapCmd.FullCommand():
-			errApp = list_snap.ListSnap(bkpDir, *snapToList)
+			errApp = exec(bkpDir, false, snap.FileList(*snapToList))
 
 		case labelSnapCmd.FullCommand():
-			errApp = labelsnap.LabelSnap(bkpDir, *snapToLabel, *labelSnapLabel)
+			errApp = exec(bkpDir, true, snap.Label(*snapToLabel, *labelSnapLabel))
 		}
 	}
 

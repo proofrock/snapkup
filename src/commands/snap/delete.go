@@ -1,14 +1,16 @@
-package delsnap
+package snap
 
 import (
-	"database/sql"
-	"fmt"
-	"os"
-	"path"
-
-	"github.com/proofrock/snapkup/util"
+	"github.com/proofrock/snapkup/model"
 )
 
+func Delete(snap int) func(modl *model.Model) error {
+	return func(modl *model.Model) error {
+		return nil
+	}
+}
+
+/*
 func DelSnap(bkpDir string, toDel int) error {
 	dbPath, errComposingDbPath := util.DbFile(bkpDir)
 	if errComposingDbPath != nil {
@@ -76,3 +78,4 @@ func DelSnap(bkpDir string, toDel int) error {
 
 	return nil
 }
+*/

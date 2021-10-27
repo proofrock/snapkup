@@ -1,13 +1,17 @@
-package info_snap
+package snap
 
 import (
-	"database/sql"
-	"fmt"
-
-	"github.com/proofrock/snapkup/util"
+	"github.com/proofrock/snapkup/model"
 )
 
-const sql1 = `WITH 
+func Info(snap int) func(modl *model.Model) error {
+	return func(modl *model.Model) error {
+		return nil
+	}
+}
+
+/*
+const sql1 = `WITH
 consts AS (SELECT ? AS snap),
 data AS (
           SELECT 1 AS key, COUNT(1) AS val FROM ITEMS WHERE SNAP = (SELECT snap FROM consts) AND IS_DIR = 0
@@ -90,3 +94,4 @@ func InfoSnap(bkpDir string, snap int) error {
 
 	return nil
 }
+*/
