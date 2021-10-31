@@ -1,7 +1,6 @@
 package snap
 
 import (
-	"encoding/hex"
 	"fmt"
 	"io"
 	"io/fs"
@@ -9,11 +8,9 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
-	"strings"
 	"time"
 
 	pb "github.com/cheggaaa/pb/v3"
-	"github.com/dchest/siphash"
 	"github.com/proofrock/snapkup/model"
 	"github.com/proofrock/snapkup/util"
 	"github.com/proofrock/snapkup/util/streams"
@@ -158,36 +155,6 @@ func walkFSTree(roots []model.Root, key []byte) (files []fileNfo, numFiles int, 
 	}
 
 	return
-}
-
-const bufSize = 1024 * 32 // 32Kb
-
-func fileHash(path string, key []byte) (string, error) {
-	source, errOpening := os.Open(path)
-	if errOpening != nil {
-		return "", errOpening
-	}
-	defer source.Close()
-
-	hasher := siphash.New128(key)
-	buf := make([]byte, bufSize)
-	for {
-		n, errHashingFile := source.Read(buf)
-		if errHashingFile != nil && errHashingFile != io.EOF {
-			return "", errHashingFile
-		}
-		if n == 0 {
-			break
-		}
-
-		if _, errWritingHash := hasher.Write(buf[:n]); errWritingHash != nil {
-			return "", errWritingHash
-		}
-	}
-
-	ret := hasher.Sum(nil)
-
-	return strings.ToLower(hex.EncodeToString(ret)), nil
 }
 
 func store(key []byte, src string, dst string, dontCompress bool) (blobSize int64, err error) {

@@ -1,6 +1,7 @@
 package snap
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -65,6 +66,10 @@ func Restore(bkpDir string, snap int, restoreDir string, restorePrefixPath *stri
 				if errCopying := restore(modl.Key4Enc, source, dest); errCopying != nil {
 					return errCopying
 				}
+
+				if !checkRestoredFile(dest, item.Hash, modl.Key4Hashes) {
+					return errors.New(fmt.Sprintf("ERROR: general checksum error in %s", dest))
+				}
 			} else {
 				if errMkingDir := os.MkdirAll(dest, os.FileMode(0700)); errMkingDir != nil {
 					return errMkingDir
@@ -124,4 +129,12 @@ func restore(key []byte, src string, dst string) error {
 	}
 
 	return nil
+}
+
+func checkRestoredFile(dest, recordedHash string, key []byte) bool {
+	hash, errHashing := fileHash(dest, key)
+	if errHashing != nil {
+		return false
+	}
+	return hash == recordedHash
 }
