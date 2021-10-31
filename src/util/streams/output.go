@@ -13,6 +13,7 @@ import (
 type OutputStream struct {
 	underlying    io.Writer
 	key           []byte
+	nonce         []byte
 	neverCompress bool
 	chunkSize     int
 	chunkNum      uint32
@@ -26,7 +27,16 @@ func NewOS(key []byte, chunkSize int, neverCompress bool, w io.Writer) (*OutputS
 		return nil, errWritingMagicNumber
 	}
 
-	return &OutputStream{w, key, neverCompress, chunkSize, 0, make([]byte, chunkSize), 0, false}, nil
+	nonce := make([]byte, nonceSize)
+	if _, errGenNonce := rand.Read(nonce); errGenNonce != nil {
+		return nil, errGenNonce
+	}
+
+	if _, errWritingNonce := w.Write(nonce); errWritingNonce != nil {
+		return nil, errWritingNonce
+	}
+
+	return &OutputStream{w, key, nonce, neverCompress, chunkSize, 0, make([]byte, chunkSize), 0, false}, nil
 }
 
 func (os *OutputStream) process() error {
@@ -53,24 +63,19 @@ func (os *OutputStream) process() error {
 	if errAEAD != nil {
 		return errAEAD
 	}
-	nonce := make([]byte, aead.NonceSize())
-	if _, errGenIV := rand.Read(nonce); errGenIV != nil {
-		return errGenIV
-	}
+
+	derivedNonce := xor(os.nonce, uint32ToBytes(os.chunkNum))
+	os.chunkNum++
 
 	encLen := len(compressed) + aead.Overhead()
 	encrypted := make([]byte, encLen)
 
-	encrypted = aead.Seal(nil, nonce, compressed, uint32ToBytes(os.chunkNum))
-	os.chunkNum++
-	if errWritingLen := binary.Write(os.underlying, binary.LittleEndian, int64(encLen+len(nonce))); errWritingLen != nil {
+	encrypted = aead.Seal(nil, derivedNonce, compressed, nil)
+	if errWritingLen := binary.Write(os.underlying, binary.LittleEndian, int64(encLen+nonceSize)); errWritingLen != nil {
 		return errWritingLen
 	}
 	if _, errWritingZ := os.underlying.Write(isCompressed); errWritingZ != nil {
 		return errWritingZ
-	}
-	if _, errWritingNonce := os.underlying.Write(nonce); errWritingNonce != nil {
-		return errWritingNonce
 	}
 	if _, errWritingData := os.underlying.Write(encrypted); errWritingData != nil {
 		return errWritingData

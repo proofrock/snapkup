@@ -13,6 +13,7 @@ import (
 type InputStream struct {
 	underlying io.ReadCloser
 	key        []byte
+	nonce      []byte
 	chunkSize  int
 	chunkNum   uint32
 	chunk      []byte
@@ -28,7 +29,13 @@ func NewIS(key []byte, r io.ReadCloser) (*InputStream, error) {
 	if bytes.Compare(magicNumber, wannabeMagicNumber) != 0 {
 		return nil, errors.New("Wrong magic number")
 	}
-	return &InputStream{r, key, 0, 0, nil, 0, false}, nil
+
+	nonce := make([]byte, nonceSize)
+	if _, errReadingNonce := r.Read(nonce); errReadingNonce != nil {
+		return nil, errReadingNonce
+	}
+
+	return &InputStream{r, key, nonce, 0, 0, nil, 0, false}, nil
 }
 
 func (is *InputStream) unprocess() (finished bool, errDecrypting error) {
@@ -50,18 +57,15 @@ func (is *InputStream) unprocess() (finished bool, errDecrypting error) {
 		return false, errAEAD
 	}
 
-	nonce := make([]byte, aead.NonceSize())
-	if _, errReadingNonce := is.underlying.Read(nonce); errReadingNonce != nil {
-		return false, errReadingNonce
-	}
+	derivedNonce := xor(is.nonce, uint32ToBytes(is.chunkNum))
+	is.chunkNum++
 
-	enc := make([]byte, encSize-int64(aead.NonceSize()))
+	enc := make([]byte, encSize-int64(nonceSize))
 	if _, errReadingEnc := is.underlying.Read(enc); errReadingEnc != nil {
 		return false, errReadingEnc
 	}
 
-	compressed, errDecrypting := aead.Open(nil, nonce, enc, uint32ToBytes(is.chunkNum))
-	is.chunkNum++
+	compressed, errDecrypting := aead.Open(nil, derivedNonce, enc, nil)
 	if errDecrypting != nil {
 		return false, errDecrypting
 	}
