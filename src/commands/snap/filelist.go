@@ -10,7 +10,7 @@ import (
 func FileList(snap int) func(modl *model.Model) error {
 	return func(modl *model.Model) error {
 		if findSnap(modl, snap) == -1 {
-			return fmt.Errorf("Snap %d not found in pool", snap)
+			return fmt.Errorf("snap %d not found in pool", snap)
 		}
 
 		var list []string

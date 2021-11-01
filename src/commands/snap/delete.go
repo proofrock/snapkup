@@ -11,7 +11,7 @@ func Delete(toDel int) func(modl *model.Model) error {
 		var found = findSnap(modl, toDel)
 
 		if found == -1 {
-			return fmt.Errorf("Snap %d not found in pool", toDel)
+			return fmt.Errorf("snap %d not found in pool", toDel)
 		}
 
 		var nuItems []model.Item

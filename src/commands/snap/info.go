@@ -35,7 +35,7 @@ func Info(snap int) func(modl *model.Model) error {
 	return func(modl *model.Model) error {
 		if snap > -1 {
 			if findSnap(modl, snap) == -1 {
-				return fmt.Errorf("Snap %d not found in pool", snap)
+				return fmt.Errorf("snap %d not found in pool", snap)
 			}
 		}
 

@@ -10,7 +10,7 @@ import (
 	"sort"
 	"time"
 
-	pb "github.com/cheggaaa/pb/v3"
+	"github.com/cheggaaa/pb/v3"
 	"github.com/proofrock/snapkup/model"
 	"github.com/proofrock/snapkup/util"
 	"github.com/proofrock/snapkup/util/streams"

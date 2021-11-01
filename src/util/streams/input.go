@@ -27,7 +27,7 @@ func NewIS(key []byte, r io.ReadCloser) (*InputStream, error) {
 		return nil, errReadingMagicNumber
 	}
 	if bytes.Compare(magicNumber, wannabeMagicNumber) != 0 {
-		return nil, errors.New("Wrong magic number")
+		return nil, errors.New("wrong magic number")
 	}
 
 	nonce := make([]byte, nonceSize)

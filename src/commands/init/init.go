@@ -14,7 +14,7 @@ func Init(pwd string, bkpDir string) error {
 	if isEmpty, errCheckingEmpty := util.IsEmpty(bkpDir); errCheckingEmpty != nil {
 		return errCheckingEmpty
 	} else if !isEmpty {
-		return fmt.Errorf("Backup dir is not empty (%s)", bkpDir)
+		return fmt.Errorf("backup dir is not empty (%s)", bkpDir)
 	}
 
 	data, errNewData := model.NewModel()

@@ -34,18 +34,18 @@ func TestRW(t *testing.T) {
 		f, _ := os.Create("ciabo")
 		defer f.Close()
 
-		os, err := NewOS(key, 16*MEGA, false, f)
+		ous, err := NewOS(key, 16*MEGA, false, f)
 		if err != nil {
 			t.Fatal(err)
 		}
 		defer func() {
-			err := os.Close()
+			err := ous.Close()
 			if err != nil {
 				t.Fatal(err)
 			}
 		}()
 
-		_, err = os.Write(data)
+		_, err = ous.Write(data)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -95,18 +95,18 @@ func TestNoRandom(t *testing.T) {
 		f, _ := os.Create("ciano")
 		defer f.Close()
 
-		os, err := NewOS(key, 16*MEGA, false, f)
+		ous, err := NewOS(key, 16*MEGA, false, f)
 		if err != nil {
 			t.Fatal(err)
 		}
 		defer func() {
-			err := os.Close()
+			err := ous.Close()
 			if err != nil {
 				t.Fatal(err)
 			}
 		}()
 
-		_, err = os.Write(data)
+		_, err = ous.Write(data)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -157,18 +157,18 @@ func TestNoZ(t *testing.T) {
 		f, _ := os.Create("ciaco")
 		defer f.Close()
 
-		os, err := NewOS(key, 16*MEGA, true, f)
+		ous, err := NewOS(key, 16*MEGA, true, f)
 		if err != nil {
 			t.Fatal(err)
 		}
 		defer func() {
-			err := os.Close()
+			err := ous.Close()
 			if err != nil {
 				t.Fatal(err)
 			}
 		}()
 
-		_, err = os.Write(data)
+		_, err = ous.Write(data)
 		if err != nil {
 			t.Fatal(err)
 		}

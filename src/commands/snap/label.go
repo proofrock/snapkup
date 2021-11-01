@@ -16,6 +16,6 @@ func Label(snap int, label string) func(modl *model.Model) error {
 			}
 		}
 
-		return fmt.Errorf("Snap %d not found in pool", snap)
+		return fmt.Errorf("snap %d not found in pool", snap)
 	}
 }

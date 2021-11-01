@@ -8,10 +8,10 @@ const nonceSize = 24
 
 const zLevel = 19
 
-var magicNumber []byte = []byte("SNP1")
+var magicNumber = []byte("SNP1")
 
-var mnCompressed []byte = []byte("Z")
-var mnUncompressed []byte = []byte("N")
+var mnCompressed = []byte("Z")
+var mnUncompressed = []byte("N")
 
 func uint32ToBytes(i uint32) []byte {
 	bs := make([]byte, 4)

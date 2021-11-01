@@ -17,7 +17,7 @@ func Delete(toDel string) func(modl *model.Model) error {
 		}
 
 		if found == -1 {
-			return fmt.Errorf("Root not found in pool (%s)", toDel)
+			return fmt.Errorf("root not found in pool (%s)", toDel)
 		}
 
 		modl.Roots = append(modl.Roots[:found], modl.Roots[found+1:]...)

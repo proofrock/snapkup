@@ -30,29 +30,42 @@ type Item struct {
 	ModTime int64  `json:"modTime"`
 }
 
+type AggloRef struct {
+	AggloID string `json:"aggloId"`
+	Offset  int64  `json:"offset"`
+}
+
 type Blob struct {
-	Hash     string `json:"hash"`
-	Size     int64  `json:"size"`
-	BlobSize int64  `json:"blobSize"`
+	Hash     string    `json:"hash"`
+	Size     int64     `json:"size"`
+	BlobSize int64     `json:"blobSize"`
+	AggloRef *AggloRef `json:"aggloRef"`
 }
 
 type Root struct {
 	Path string `json:"path"`
 }
 
+type Agglo struct {
+	ID   string `json:"id"`
+	Size int64  `json:"size"`
+	Hash []byte `json:"hash"`
+}
+
 type Model struct {
 	KDFSalt    []byte
-	Key4Hashes []byte `json:"key4hashes"`
-	Key4Enc    []byte `json:"key4enc"`
-	Snaps      []Snap `json:"snaps"`
-	Items      []Item `json:"items"`
-	Blobs      []Blob `json:"blobs"`
-	Roots      []Root `json:"roots"`
+	Key4Hashes []byte  `json:"key4hashes"`
+	Key4Enc    []byte  `json:"key4enc"`
+	Snaps      []Snap  `json:"snaps"`
+	Items      []Item  `json:"items"`
+	Blobs      []Blob  `json:"blobs"`
+	Agglos     []Agglo `json:"agglos"`
+	Roots      []Root  `json:"roots"`
 }
 
 const kdfSaltSize = 16
 
-var magicNumber []byte = []byte("SNPMDL1")
+var magicNumber = []byte("SNPMDL1")
 
 const modelFileName = "snapkup.dat"
 
@@ -91,7 +104,7 @@ func LoadModel(pwd string, dir string) (modl *Model, err error) {
 		return nil, errReadingMagicNumber
 	}
 	if bytes.Compare(magicNumber, wannabeMagicNumber) != 0 {
-		return nil, errors.New("Wrong magic number")
+		return nil, errors.New("wrong magic number")
 	}
 
 	kdfSalt := make([]byte, kdfSaltSize)

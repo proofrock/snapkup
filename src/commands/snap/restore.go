@@ -16,24 +16,16 @@ import (
 	"github.com/proofrock/snapkup/util/streams"
 )
 
-type item struct {
-	Path    string
-	Hash    string
-	IsDir   bool
-	Mode    int32
-	ModTime int64
-}
-
 func Restore(bkpDir string, snap int, restoreDir string, restorePrefixPath *string) func(modl *model.Model) error {
 	return func(modl *model.Model) error {
 		if findSnap(modl, snap) == -1 {
-			return fmt.Errorf("Snap %d not found in pool", snap)
+			return fmt.Errorf("snap %d not found in pool", snap)
 		}
 
 		if isEmpty, errCheckingEmpty := util.IsEmpty(restoreDir); errCheckingEmpty != nil {
 			return errCheckingEmpty
 		} else if !isEmpty {
-			return fmt.Errorf("Restore dir is not empty (%s)", restoreDir)
+			return fmt.Errorf("restore dir is not empty (%s)", restoreDir)
 		}
 
 		// finds files to restore

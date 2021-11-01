@@ -85,7 +85,7 @@ func (os *OutputStream) process() error {
 
 func (os *OutputStream) Write(p []byte) (n int, err error) {
 	if os.finished {
-		return 0, errors.New("Stream already closed")
+		return 0, errors.New("stream already closed")
 	}
 
 	for i := 0; i < len(p); i++ {
