@@ -11,7 +11,7 @@ import (
 )
 
 type InputStream struct {
-	underlying io.ReadCloser
+	underlying io.Reader
 	key        []byte
 	nonce      []byte
 	chunkSize  int
@@ -21,7 +21,7 @@ type InputStream struct {
 	finished   bool
 }
 
-func NewIS(key []byte, r io.ReadCloser) (*InputStream, error) {
+func NewIS(key []byte, r io.Reader) (*InputStream, error) {
 	wannabeMagicNumber := make([]byte, len(magicNumber))
 	if _, errReadingMagicNumber := r.Read(wannabeMagicNumber); errReadingMagicNumber != nil {
 		return nil, errReadingMagicNumber

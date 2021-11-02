@@ -2,8 +2,11 @@ package main
 
 import (
 	"fmt"
+	"github.com/proofrock/snapkup/commands/agglo"
+	"math/rand"
 	"os"
 	"path/filepath"
+	"time"
 
 	"gopkg.in/alecthomas/kingpin.v2"
 
@@ -62,7 +65,23 @@ var (
 	storageCmd = kingpin.Command("storage", "Commands related to the storage").Alias("f")
 
 	storageGCCmd = storageCmd.Command("garbage-collect", "Deletes dangling files and structures, freeing space.").Alias("gc")
+
+	aggloCmd = kingpin.Command("agglo", "Commands related to agglo(meration)s of smaller files").Alias("a")
+
+	aggloCalcCmd = aggloCmd.Command("calc", "Calculates how much files can be deleted by agglomerating.").Alias("c")
+	acThreshold  = aggloCalcCmd.Arg("threshold", "Files smaller than this size (in Mb) will be merged.").Required().Int()
+	acTarget     = aggloCalcCmd.Arg("target", "Target size for the agglomeration files (in Mb).").Required().Int()
+
+	aggloDoCmd  = aggloCmd.Command("perform", "Perform agglomerations.").Alias("do")
+	adThreshold = aggloDoCmd.Arg("threshold", "Files smaller than this size (in Mb) will be merged.").Required().Int()
+	adTarget    = aggloDoCmd.Arg("target", "Target size for the agglomeration files (in Mb).").Required().Int()
+
+	aggloUnpackCmd = aggloCmd.Command("unpack", "Unpacks and removes all the agglomerations.").Alias("x")
 )
+
+func init() {
+	rand.Seed(time.Now().UnixMilli())
+}
 
 func exec(pwd, bkpDir string, save bool, block func(modl *model.Model) error) error {
 	modl, errLoadingModel := model.LoadModel(pwd, bkpDir)
@@ -133,6 +152,15 @@ func app(pwd string) (errApp error) {
 
 		case storageGCCmd.FullCommand():
 			errApp = exec(pwd, bkpDir, true, storage.GarbageCollect(bkpDir))
+
+		case aggloCalcCmd.FullCommand():
+			errApp = exec(pwd, bkpDir, false, agglo.Calc(*acThreshold*util.Mega, *acTarget*util.Mega))
+
+		case aggloDoCmd.FullCommand():
+			errApp = exec(pwd, bkpDir, true, agglo.Perform(bkpDir, *adThreshold*util.Mega, *adTarget*util.Mega))
+
+		case aggloUnpackCmd.FullCommand():
+			errApp = exec(pwd, bkpDir, true, agglo.Unpack(bkpDir))
 		}
 	}
 

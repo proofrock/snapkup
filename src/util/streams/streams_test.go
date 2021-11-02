@@ -12,7 +12,7 @@ import (
 
 func init() {
 	println("Init random seed")
-	rnd.Seed(time.Now().Unix())
+	rnd.Seed(time.Now().UnixMilli())
 }
 
 const MEGA = 1024 * 1024

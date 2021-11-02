@@ -21,9 +21,7 @@ func uint32ToBytes(i uint32) []byte {
 
 func xor(b1, b2 []byte) []byte {
 	if len(b1) < len(b2) {
-		bx := b1
-		b1 = b2
-		b2 = bx
+		b1, b2 = b2, b1
 	}
 	ret := make([]byte, len(b1))
 	for i := 0; i < len(ret); i++ {

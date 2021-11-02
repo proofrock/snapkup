@@ -10,7 +10,7 @@ func Add(toAdd string) func(modl *model.Model) error {
 	return func(modl *model.Model) error {
 		for _, root := range modl.Roots {
 			if root.Path == toAdd {
-				return fmt.Errorf("r,oot already present (%s)", toAdd)
+				return fmt.Errorf("root already present (%s)", toAdd)
 			}
 		}
 
