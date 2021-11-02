@@ -34,7 +34,7 @@ func TestRW(t *testing.T) {
 		f, _ := os.Create("ciabo")
 		defer f.Close()
 
-		ous, err := NewOS(key, 16*MEGA, false, f)
+		ous, err := NewOS(key, 8*MEGA, false, f)
 		if err != nil {
 			t.Fatal(err)
 		}

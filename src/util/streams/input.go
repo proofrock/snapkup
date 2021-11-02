@@ -11,14 +11,15 @@ import (
 )
 
 type InputStream struct {
-	underlying io.Reader
-	key        []byte
-	nonce      []byte
-	chunkSize  int
-	chunkNum   uint32
-	chunk      []byte
-	index      int
-	finished   bool
+	underlying      io.Reader
+	key             []byte
+	nonce           []byte
+	previousAuthTag []byte
+	chunkSize       int
+	chunkNum        uint32
+	chunk           []byte
+	index           int
+	finished        bool
 }
 
 func NewIS(key []byte, r io.Reader) (*InputStream, error) {
@@ -35,7 +36,7 @@ func NewIS(key []byte, r io.Reader) (*InputStream, error) {
 		return nil, errReadingNonce
 	}
 
-	return &InputStream{r, key, nonce, 0, 0, nil, 0, false}, nil
+	return &InputStream{r, key, nonce, nil, 0, 0, nil, 0, false}, nil
 }
 
 func (is *InputStream) unprocess() (finished bool, errDecrypting error) {
@@ -65,10 +66,16 @@ func (is *InputStream) unprocess() (finished bool, errDecrypting error) {
 		return false, errReadingEnc
 	}
 
-	compressed, errDecrypting := aead.Open(nil, derivedNonce, enc, nil)
+	if is.previousAuthTag == nil {
+		is.previousAuthTag = make([]byte, aead.Overhead())
+	}
+
+	compressed, errDecrypting := aead.Open(nil, derivedNonce, enc, is.previousAuthTag)
 	if errDecrypting != nil {
 		return false, errDecrypting
 	}
+
+	is.previousAuthTag = enc[len(enc)-aead.Overhead():]
 
 	var uncompressed []byte
 	var errDecompressing error
