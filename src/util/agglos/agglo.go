@@ -40,6 +40,7 @@ func Plan(modl *model.Model, treshold, target int64) (agglos map[string][]string
 		offset += blob.BlobSize
 		if offset > target {
 			agglos[aggloId] = blobsForAgglo
+			blobsForAgglo = make([]string, 0)
 			aggloId = genAggloId(16)
 			offset = 0
 		}
@@ -206,11 +207,13 @@ func SplitAll(modl *model.Model, bkpDir string) error {
 		}
 	}
 
+	modl.Agglos = make([]model.Agglo, 0)
+
 	return nil
 }
 
 func genAggloId(lenBytes int) string {
-	bytes := make([]byte, lenBytes)
-	rand.Read(bytes)
-	return "+" + strings.ToLower(hex.EncodeToString(bytes))
+	bytess := make([]byte, lenBytes)
+	rand.Read(bytess)
+	return "+" + strings.ToLower(hex.EncodeToString(bytess))
 }
