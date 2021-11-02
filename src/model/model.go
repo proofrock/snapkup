@@ -49,7 +49,7 @@ type Root struct {
 type Agglo struct {
 	ID   string `json:"id"`
 	Size int64  `json:"size"`
-	Hash []byte `json:"hash"`
+	Hash string `json:"hash"`
 }
 
 type Model struct {

@@ -3,6 +3,7 @@ package snap
 import (
 	"errors"
 	"fmt"
+	"github.com/proofrock/snapkup/util/agglos"
 	"io"
 	"io/fs"
 	"os"
@@ -45,18 +46,30 @@ func Restore(bkpDir string, snap int, restoreDir string, restorePrefixPath *stri
 
 		fmt.Printf("Loaded %d files and %d directories.\n", numFiles, numDirs)
 
+		blobs := make(map[string]model.Blob)
+		for _, blob := range modl.Blobs {
+			blobs[blob.Hash] = blob
+		}
+
 		for _, item := range items {
-			dest := path.Join(restoreDir, item.Path)
+			dest := path.Join(restoreDir, removeDrive(item.Path))
 			if !item.IsDir {
 				// it's a file
-				source := path.Join(bkpDir, item.Hash[0:1], item.Hash)
-
 				if errMkingDir := os.MkdirAll(filepath.Dir(dest), os.FileMode(0700)); errMkingDir != nil {
 					return errMkingDir
 				}
 
-				if errCopying := restore(modl.Key4Enc, source, dest); errCopying != nil {
-					return errCopying
+				blob := blobs[item.Hash]
+				if blob.AggloRef == nil {
+					source := path.Join(bkpDir, item.Hash[0:1], item.Hash)
+					if errCopying := restore(modl.Key4Enc, source, dest); errCopying != nil {
+						return errCopying
+					}
+				} else {
+					source := path.Join(bkpDir, (*blob.AggloRef).AggloID[1:2], (*blob.AggloRef).AggloID)
+					if errCopying := restoreFromAgglo(modl.Key4Enc, (*blob.AggloRef).Offset, blob.BlobSize, source, dest); errCopying != nil {
+						return errCopying
+					}
 				}
 
 				if !checkRestoredFile(dest, item.Hash, modl.Key4Hashes) {
@@ -70,7 +83,7 @@ func Restore(bkpDir string, snap int, restoreDir string, restorePrefixPath *stri
 		}
 
 		for _, item := range items {
-			dest := path.Join(restoreDir, item.Path)
+			dest := path.Join(restoreDir, removeDrive(item.Path))
 
 			if errChmod := os.Chmod(dest, fs.FileMode(item.Mode)); errChmod != nil {
 				return errChmod
@@ -86,6 +99,13 @@ func Restore(bkpDir string, snap int, restoreDir string, restorePrefixPath *stri
 
 		return nil
 	}
+}
+
+func removeDrive(p string) string {
+	if p[1] == ':' {
+		return path.Join(p[0:1], p[2:])
+	}
+	return p
 }
 
 func restore(key []byte, src string, dst string) error {
@@ -123,8 +143,48 @@ func restore(key []byte, src string, dst string) error {
 	return nil
 }
 
+func restoreFromAgglo(key []byte, offset, size int64, src string, dst string) error {
+	if _, errStatsing := os.Stat(dst); !os.IsNotExist(errStatsing) {
+		// an identical file already exists
+		return nil
+	}
+
+	source, errOpening := os.Open(src)
+	if errOpening != nil {
+		return errOpening
+	}
+	defer source.Close()
+
+	sourcePiece, errOpeningPiece := agglos.NewAIS(offset, size, source)
+	if errOpeningPiece != nil {
+		return errOpeningPiece
+	}
+
+	destination, errCreating := os.Create(dst)
+	if errCreating != nil {
+		return errCreating
+	}
+	defer destination.Close()
+
+	ins, err := streams.NewIS(key, sourcePiece)
+	if err != nil {
+		return err
+	}
+	defer ins.Close()
+
+	if _, err = io.Copy(destination, ins); err != nil {
+		return err
+	}
+
+	if err = ins.Close(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func checkRestoredFile(dest, recordedHash string, key []byte) bool {
-	hash, errHashing := fileHash(dest, key)
+	hash, errHashing := util.FileHash(dest, key)
 	if errHashing != nil {
 		return false
 	}

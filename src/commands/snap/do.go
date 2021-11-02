@@ -117,7 +117,7 @@ func walkFSTree(roots []model.Root, key []byte) (files []fileNfo, numFiles int, 
 						numDirs++
 					} else {
 						numFiles++
-						if _hash, errHashing := fileHash(path, key); errHashing != nil {
+						if _hash, errHashing := util.FileHash(path, key); errHashing != nil {
 							fmt.Fprintf(os.Stderr, "Error hashing file: %v\n", errHashing)
 						} else {
 							hash = _hash
@@ -137,7 +137,7 @@ func walkFSTree(roots []model.Root, key []byte) (files []fileNfo, numFiles int, 
 				return nil
 			})
 		} else {
-			if hash, errHashing := fileHash(root.Path, key); errHashing != nil {
+			if hash, errHashing := util.FileHash(root.Path, key); errHashing != nil {
 				fmt.Fprintf(os.Stderr, "Error hashing file: %v\n", errHashing)
 			} else {
 				files = append(files, fileNfo{
