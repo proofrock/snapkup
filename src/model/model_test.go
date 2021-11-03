@@ -12,7 +12,7 @@ func TestRW(t *testing.T) {
 	}
 
 	err = SaveModel("key", ".", *modl)
-	defer os.Remove(modelFileName)
+	defer os.Remove(ModelFileName)
 
 	_, err = LoadModel("key", ".")
 	if err != nil {
