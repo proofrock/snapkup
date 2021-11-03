@@ -73,12 +73,12 @@ As many roots as you want can be stored; `root list` and `root del` are availabl
 
 ### Take your first snapshot
 
-`snapkup -d C:\MySnapkupDir snap take`
+`snapkup -d C:\MySnapkupDir snap do`
 
 It walks the roots' filesystem trees, and hashes every file. It then compares the hashes with the files already stored, 
 and stores only those files that are not already seen.
 
-`snapkup -d C:\MySnapkupDir snap take -l "My first label"`
+`snapkup -d C:\MySnapkupDir snap do -l "My first label"`
 
 All (unique) files are stored as data "blobs", that are compressed (unless `--no-compress` is specified), encrypted and 
 protected with a checksum.

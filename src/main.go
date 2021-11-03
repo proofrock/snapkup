@@ -37,7 +37,7 @@ var (
 
 	snpCmd = kingpin.Command("snap", "Commands related to the snap(s)").Alias("s")
 
-	snapCmd        = snpCmd.Command("take", "Takes a new snapshot of the roots.").Alias("do")
+	snapCmd        = snpCmd.Command("do", "Takes a new snapshot of the roots.")
 	snapNoCompress = snapCmd.Flag("no-compress", "Doesn't compress the stored files.").Bool()
 	snapLabel      = snapCmd.Flag("label", "Label for this snap.").Short('l').Default("").String()
 
