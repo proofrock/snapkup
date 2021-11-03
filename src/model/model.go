@@ -64,7 +64,7 @@ const kdfSaltSize = 16
 
 var magicNumber = []byte("SNPMDL1")
 
-const modelFileName = "snapkup.dat"
+const ModelFileName = "snapkup.dat"
 
 func NewModel() (modl *Model, err error) {
 	var ret Model
@@ -88,7 +88,7 @@ func NewModel() (modl *Model, err error) {
 }
 
 func LoadModel(pwd string, dir string) (modl *Model, err error) {
-	fPath := path.Join(dir, modelFileName)
+	fPath := path.Join(dir, ModelFileName)
 
 	f, errOpening := os.Open(fPath)
 	if errOpening != nil {
@@ -137,7 +137,7 @@ func LoadModel(pwd string, dir string) (modl *Model, err error) {
 func SaveModel(pwd string, dir string, modl Model) error {
 	key := argon2.Key([]byte(pwd), modl.KDFSalt, 3, 32*1024, 4, 32)
 
-	fPath := path.Join(dir, modelFileName)
+	fPath := path.Join(dir, ModelFileName)
 
 	f, err := os.Create(fPath)
 	if err != nil {

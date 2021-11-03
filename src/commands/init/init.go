@@ -11,6 +11,7 @@ import (
 )
 
 func Init(pwd string, bkpDir string) error {
+	// FIXME it fails for .DS_Store files in MacOS
 	if isEmpty, errCheckingEmpty := util.IsEmpty(bkpDir); errCheckingEmpty != nil {
 		return errCheckingEmpty
 	} else if !isEmpty {
