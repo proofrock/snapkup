@@ -61,6 +61,8 @@ var (
 	snapToLabel    = labelSnapCmd.Arg("snap", "The snap to label.").Required().Int()
 	labelSnapLabel = labelSnapCmd.Arg("label", "The label.").Required().String()
 
+	checkSnapCmd = snpCmd.Command("check", "Checks the on-disk structures for problems.").Alias("ck")
+
 	aggloCmd = kingpin.Command("agglo", "Commands related to agglo(meration)s of smaller files").Alias("a")
 
 	aggloCalcCmd = aggloCmd.Command("calc", "Calculates how much files can be deleted by agglomerating.").Alias("c")
@@ -144,6 +146,9 @@ func app(pwd string) (errApp error) {
 
 		case labelSnapCmd.FullCommand():
 			errApp = exec(pwd, bkpDir, true, snap.Label(*snapToLabel, *labelSnapLabel))
+
+		case checkSnapCmd.FullCommand():
+			errApp = exec(pwd, bkpDir, false, snap.Check(bkpDir))
 
 		case aggloCalcCmd.FullCommand():
 			errApp = exec(pwd, bkpDir, false, agglo.Calc(*acThreshold*util.Mega, *acTarget*util.Mega))

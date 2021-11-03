@@ -16,7 +16,7 @@ import (
 
 func Do(bkpDir string, dontCompress bool, label string) func(modl *model.Model) error {
 	return func(modl *model.Model) error {
-		files, numFiles, numDirs := walkFSTree(modl.Roots, modl.Key4Hashes)
+		files, numFiles, numDirs := walkFSTree(modl.Roots, modl.Key4Hashes, true)
 		fmt.Printf("Found %d files and %d directories.\n", numFiles, numDirs)
 
 		sort.Slice(files, func(i int, j int) bool { return files[i].FullPath < files[j].FullPath })

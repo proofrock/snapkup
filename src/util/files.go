@@ -32,10 +32,14 @@ func FileHash(path string, key []byte) (string, error) {
 	}
 	defer source.Close()
 
+	return DataHash(source, key)
+}
+
+func DataHash(reader io.Reader, key []byte) (string, error) {
 	hasher := siphash.New128(key)
 	buf := make([]byte, bufSize)
 	for {
-		n, errHashingFile := source.Read(buf)
+		n, errHashingFile := reader.Read(buf)
 		if errHashingFile != nil && errHashingFile != io.EOF {
 			return "", errHashingFile
 		}
