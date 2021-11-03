@@ -57,8 +57,8 @@ this flag will need to be repeated for every command.
 
 `snapkup -d C:\MySnapkupDir init`
 
-Requires an empty directory. Creates a shallow dir structure to divide the files, and a `snapkup.dat` file (encrypted) 
-that will store all the data. Also, generates the encryption and checksum keys.
+It requires an empty directory and creates a shallow dir structure to organize the files, and a `snapkup.dat` file (encrypted) 
+that will store all the metadata. Also, generates the encryption and checksum keys.
 
 ### Register the directory to back up as a root
 
