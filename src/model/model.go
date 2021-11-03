@@ -42,10 +42,6 @@ type Blob struct {
 	AggloRef *AggloRef `json:"aggloRef"`
 }
 
-type Root struct {
-	Path string `json:"path"`
-}
-
 type Agglo struct {
 	ID   string `json:"id"`
 	Size int64  `json:"size"`
@@ -54,13 +50,13 @@ type Agglo struct {
 
 type Model struct {
 	KDFSalt    []byte
-	Key4Hashes []byte  `json:"key4hashes"`
-	Key4Enc    []byte  `json:"key4enc"`
-	Snaps      []Snap  `json:"snaps"`
-	Items      []Item  `json:"items"`
-	Blobs      []Blob  `json:"blobs"`
-	Agglos     []Agglo `json:"agglos"`
-	Roots      []Root  `json:"roots"`
+	Key4Hashes []byte   `json:"key4hashes"`
+	Key4Enc    []byte   `json:"key4enc"`
+	Snaps      []Snap   `json:"snaps"`
+	Items      []Item   `json:"items"`
+	Blobs      []Blob   `json:"blobs"`
+	Agglos     []Agglo  `json:"agglos"`
+	Roots      []string `json:"roots"`
 }
 
 const kdfSaltSize = 16

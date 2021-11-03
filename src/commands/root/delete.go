@@ -10,7 +10,7 @@ func Delete(toDel string) func(modl *model.Model) error {
 	return func(modl *model.Model) error {
 		var found = -1
 		for i, root := range modl.Roots {
-			if root.Path == toDel {
+			if root == toDel {
 				found = i
 				break
 			}

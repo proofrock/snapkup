@@ -9,14 +9,14 @@ import (
 func Add(toAdd string) func(modl *model.Model) error {
 	return func(modl *model.Model) error {
 		for _, root := range modl.Roots {
-			if root.Path == toAdd {
+			if root == toAdd {
 				return fmt.Errorf("root already present (%s)", toAdd)
 			}
 		}
 
-		modl.Roots = append(modl.Roots, model.Root{Path: toAdd})
+		modl.Roots = append(modl.Roots, toAdd)
 
-		println("Root correctly added (", toAdd, ")")
+		fmt.Printf("Root correctly added (%s)\n", toAdd)
 
 		return nil
 	}
