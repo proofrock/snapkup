@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/proofrock/snapkup/commands/agglo"
 	"math/rand"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/proofrock/snapkup/commands/agglo"
 
 	"gopkg.in/alecthomas/kingpin.v2"
 
@@ -18,7 +19,7 @@ import (
 	"github.com/proofrock/snapkup/util"
 )
 
-const version = "v0.2.0"
+const version = "v0.3.0"
 
 var (
 	relBkpDir = kingpin.Flag("backup-dir", "The directory to store backups into.").Required().Short('d').ExistingDir()
