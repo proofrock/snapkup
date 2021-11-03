@@ -99,7 +99,7 @@ in an "agglo". You can specify the threshold size of the files to merge and the 
 
 `snapkup -d C:\MySnapkupDir agglo calc 1 5`
 
-This will merge all the files up to 1Mb in agglos that are (about) 5Mb. Use `agglo perform` with the same parameters, to
+This will merge all the files up to 1Mb in agglos that are (about) 5Mb. Use `agglo do` with the same parameters, to
 actually perform the merge.
 
 `snapkup -d C:\MySnapkupDir agglo unpack`

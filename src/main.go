@@ -67,7 +67,7 @@ var (
 	acThreshold  = aggloCalcCmd.Arg("threshold", "Files smaller than this size (in Mb) will be merged.").Required().Int()
 	acTarget     = aggloCalcCmd.Arg("target", "Target size for the agglomeration files (in Mb).").Required().Int()
 
-	aggloDoCmd  = aggloCmd.Command("perform", "Perform agglomerations.").Alias("do")
+	aggloDoCmd  = aggloCmd.Command("do", "Perform agglomerations.")
 	adThreshold = aggloDoCmd.Arg("threshold", "Files smaller than this size (in Mb) will be merged.").Required().Int()
 	adTarget    = aggloDoCmd.Arg("target", "Target size for the agglomeration files (in Mb).").Required().Int()
 
@@ -149,7 +149,7 @@ func app(pwd string) (errApp error) {
 			errApp = exec(pwd, bkpDir, false, agglo.Calc(*acThreshold*util.Mega, *acTarget*util.Mega))
 
 		case aggloDoCmd.FullCommand():
-			errApp = exec(pwd, bkpDir, true, agglo.Perform(bkpDir, *adThreshold*util.Mega, *adTarget*util.Mega))
+			errApp = exec(pwd, bkpDir, true, agglo.Do(bkpDir, *adThreshold*util.Mega, *adTarget*util.Mega))
 
 		case aggloUnpackCmd.FullCommand():
 			errApp = exec(pwd, bkpDir, true, agglo.Unpack(bkpDir))
