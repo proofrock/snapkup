@@ -2,11 +2,13 @@ package snap
 
 import (
 	"fmt"
+	"os"
+	"path"
 
 	"github.com/proofrock/snapkup/model"
 )
 
-func Delete(toDel int) func(modl *model.Model) error {
+func Delete(bkpDir string, toDel int) func(modl *model.Model) error {
 	return func(modl *model.Model) error {
 		var found = findSnap(modl, toDel)
 
@@ -24,7 +26,35 @@ func Delete(toDel int) func(modl *model.Model) error {
 
 		modl.Snaps = append(modl.Snaps[:found], modl.Snaps[found+1:]...)
 
-		fmt.Printf("Snap %d correctly deleted\n", toDel)
+		fmt.Printf("Snap %d correctly deleted. Removing dangling files...\n", toDel)
+
+		blobsToDel := make(map[string]bool)
+		for _, blob := range modl.Blobs {
+			blobsToDel[blob.Hash] = true
+		}
+
+		for _, item := range modl.Items {
+			delete(blobsToDel, item.Hash)
+		}
+
+		fmt.Printf("Deleting %d blobs...\n", len(blobsToDel))
+		for hash := range blobsToDel {
+			pathToDel := path.Join(bkpDir, hash[0:1], hash)
+			if errDeleting := os.Remove(pathToDel); errDeleting != nil {
+				fmt.Fprintf(os.Stderr, "ERROR: deleting file %s; %v\n", hash, errDeleting)
+			}
+		}
+
+		var nuBlobs []model.Blob
+		for _, blob := range modl.Blobs {
+			if _, isThere := blobsToDel[blob.Hash]; !isThere {
+				nuBlobs = append(nuBlobs, blob)
+			}
+		}
+		modl.Blobs = nuBlobs
+		fmt.Printf("%d blobs remaining.\n", len(nuBlobs))
+
+		println("All done.")
 
 		return nil
 	}
