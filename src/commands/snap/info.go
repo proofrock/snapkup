@@ -28,7 +28,6 @@ type info struct {
 	Size       int64
 	StoredSize int64
 	TotStored  int64
-	Referenced int64
 }
 
 func Info(snap int) func(modl *model.Model) error {
@@ -51,7 +50,6 @@ func Info(snap int) func(modl *model.Model) error {
 		alreadyDiscoveredBlobsForSnap := make(map[string]bool)
 		for _, item := range modl.Items {
 			if _, alreadyDiscovered := alreadyDiscoveredBlobs[item.Hash]; !alreadyDiscovered {
-				nfo.Referenced += blobs[item.Hash].BlobSize
 				alreadyDiscoveredBlobs[item.Hash] = true
 			}
 			if snap <= -1 || item.Snap == snap {
@@ -75,9 +73,6 @@ func Info(snap int) func(modl *model.Model) error {
 			fmt.Printf("Stored size              : %s\n", fmtBytes(nfo.StoredSize))
 		}
 		fmt.Printf("Tot. stored (all snaps)  : %s\n", fmtBytes(nfo.TotStored))
-		if snap <= -1 {
-			fmt.Printf("Can be garbage collected : %s\n", fmtBytes(nfo.TotStored-nfo.Referenced))
-		}
 
 		return nil
 	}
