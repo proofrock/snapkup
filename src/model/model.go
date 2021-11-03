@@ -26,6 +26,7 @@ type Item struct {
 	Snap    int    `json:"snap"`
 	Hash    string `json:"hash"`
 	IsDir   bool   `json:"isDir"`
+	IsEmpty bool   `json:"isEmpty"`
 	Mode    int32  `json:"mode"`
 	ModTime int64  `json:"modTime"`
 }

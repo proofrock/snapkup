@@ -3,10 +3,8 @@ package snap
 import (
 	"fmt"
 	"io"
-	"io/fs"
 	"os"
 	"path"
-	"path/filepath"
 	"sort"
 	"time"
 
@@ -53,9 +51,18 @@ func Do(bkpDir string, dontCompress bool, label string) func(modl *model.Model) 
 
 		newHashes := make(map[string]finf) // [hash]file_info
 		for _, file := range files {
-			modl.Items = append(modl.Items, model.Item{Path: file.FullPath, Snap: snap, Hash: file.Hash, IsDir: file.IsDir, Mode: int32(file.Mode.Perm()), ModTime: file.LastModified})
+			itm := model.Item{
+				Path:    file.FullPath,
+				Snap:    snap,
+				Hash:    file.Hash,
+				IsDir:   file.IsDir,
+				IsEmpty: file.IsEmpty,
+				Mode:    int32(file.Mode.Perm()),
+				ModTime: file.LastModified,
+			}
+			modl.Items = append(modl.Items, itm)
 
-			if !file.IsDir {
+			if !file.IsDir && !file.IsEmpty {
 				if !curHashes[file.Hash] {
 					// hash not yet recorded, mark it for addition
 					newHashes[file.Hash] = finf{file.FullPath, file.Size}
@@ -91,70 +98,6 @@ func Do(bkpDir string, dontCompress bool, label string) func(modl *model.Model) 
 
 		return nil
 	}
-}
-
-type fileNfo struct {
-	FullPath     string
-	IsDir        bool
-	Hash         string
-	Name         string
-	Size         int64
-	LastModified int64
-	Mode         fs.FileMode
-}
-
-func walkFSTree(roots []model.Root, key []byte) (files []fileNfo, numFiles int, numDirs int) {
-	for _, root := range roots {
-		if froot, errStatsing := os.Stat(root.Path); errStatsing != nil {
-			fmt.Fprintf(os.Stderr, "Error in Stat() of root: %v\n", errStatsing)
-		} else if froot.IsDir() {
-			filepath.Walk(root.Path, func(path string, f os.FileInfo, errWalking error) error {
-				if errWalking != nil {
-					fmt.Fprintf(os.Stderr, "Error walking fs tree: %v\n", errWalking)
-				} else {
-					var hash string
-					if f.IsDir() {
-						numDirs++
-					} else {
-						numFiles++
-						if _hash, errHashing := util.FileHash(path, key); errHashing != nil {
-							fmt.Fprintf(os.Stderr, "Error hashing file: %v\n", errHashing)
-						} else {
-							hash = _hash
-						}
-					}
-
-					files = append(files, fileNfo{
-						IsDir:        f.IsDir(),
-						FullPath:     path,
-						Hash:         hash,
-						Name:         f.Name(),
-						Size:         f.Size(),
-						LastModified: f.ModTime().Unix(),
-						Mode:         f.Mode(),
-					})
-				}
-				return nil
-			})
-		} else {
-			if hash, errHashing := util.FileHash(root.Path, key); errHashing != nil {
-				fmt.Fprintf(os.Stderr, "Error hashing file: %v\n", errHashing)
-			} else {
-				files = append(files, fileNfo{
-					IsDir:        false,
-					FullPath:     root.Path,
-					Hash:         hash,
-					Name:         froot.Name(),
-					Size:         froot.Size(),
-					LastModified: froot.ModTime().Unix(),
-					Mode:         froot.Mode(),
-				})
-				numFiles = 1
-			}
-		}
-	}
-
-	return
 }
 
 func store(key []byte, src string, dst string, dontCompress bool) (blobSize int64, err error) {

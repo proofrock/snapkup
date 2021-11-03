@@ -59,21 +59,27 @@ func Restore(bkpDir string, snap int, restoreDir string, restorePrefixPath *stri
 					return errMkingDir
 				}
 
-				blob := blobs[item.Hash]
-				if blob.AggloRef == nil {
-					source := path.Join(bkpDir, item.Hash[0:1], item.Hash)
-					if errCopying := restore(modl.Key4Enc, source, dest); errCopying != nil {
-						return errCopying
+				if item.IsEmpty {
+					if _, errCreatingEmptyFile := os.Create(dest); errCreatingEmptyFile != nil {
+						return errCreatingEmptyFile
 					}
 				} else {
-					source := path.Join(bkpDir, (*blob.AggloRef).AggloID[1:2], (*blob.AggloRef).AggloID)
-					if errCopying := restoreFromAgglo(modl.Key4Enc, (*blob.AggloRef).Offset, blob.BlobSize, source, dest); errCopying != nil {
-						return errCopying
+					blob := blobs[item.Hash]
+					if blob.AggloRef == nil {
+						source := path.Join(bkpDir, item.Hash[0:1], item.Hash)
+						if errCopying := restore(modl.Key4Enc, source, dest); errCopying != nil {
+							return errCopying
+						}
+					} else {
+						source := path.Join(bkpDir, (*blob.AggloRef).AggloID[1:2], (*blob.AggloRef).AggloID)
+						if errCopying := restoreFromAgglo(modl.Key4Enc, (*blob.AggloRef).Offset, blob.BlobSize, source, dest); errCopying != nil {
+							return errCopying
+						}
 					}
-				}
 
-				if !checkRestoredFile(dest, item.Hash, modl.Key4Hashes) {
-					return errors.New(fmt.Sprintf("ERROR: general checksum error in %s", dest))
+					if !checkRestoredFile(dest, item.Hash, modl.Key4Hashes) {
+						return errors.New(fmt.Sprintf("general checksum error in %s", dest))
+					}
 				}
 			} else {
 				if errMkingDir := os.MkdirAll(dest, os.FileMode(0700)); errMkingDir != nil {
