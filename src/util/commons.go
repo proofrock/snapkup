@@ -1,19 +1,5 @@
 package util
 
-import (
-	"fmt"
-	"os"
-	"path"
-)
+const Mega = 1024 * 1024
 
-const DbFileName = "snapkup.db"
-
-func DbFile(bkpDir string) (string, error) {
-	dbPath := path.Join(bkpDir, DbFileName)
-
-	if _, errNotExists := os.Stat(dbPath); os.IsNotExist(errNotExists) {
-		return "", fmt.Errorf("Database does not exists, initialize backup dir first (%s)", dbPath)
-	}
-
-	return dbPath, nil
-}
+const ChunkSize = 32 * Mega // 32Mb

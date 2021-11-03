@@ -2,27 +2,24 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"path/filepath"
+	"time"
+
+	"github.com/proofrock/snapkup/commands/agglo"
 
 	"gopkg.in/alecthomas/kingpin.v2"
 
-	addroot "github.com/proofrock/snapkup/commands/add_root"
-	delroot "github.com/proofrock/snapkup/commands/del_root"
-	delsnaps "github.com/proofrock/snapkup/commands/del_snap"
-	"github.com/proofrock/snapkup/commands/info_snap"
 	initcmd "github.com/proofrock/snapkup/commands/init"
-	labelsnap "github.com/proofrock/snapkup/commands/label_snap"
-	listroots "github.com/proofrock/snapkup/commands/list_roots"
-	"github.com/proofrock/snapkup/commands/list_snap"
-	listsnaps "github.com/proofrock/snapkup/commands/list_snaps"
-	"github.com/proofrock/snapkup/commands/restore"
-	snap "github.com/proofrock/snapkup/commands/snap"
+	"github.com/proofrock/snapkup/commands/root"
+	"github.com/proofrock/snapkup/commands/snap"
+	"github.com/proofrock/snapkup/model"
 
 	"github.com/proofrock/snapkup/util"
 )
 
-const version = "v0.2.0"
+const version = "v0.3.0"
 
 var (
 	relBkpDir = kingpin.Flag("backup-dir", "The directory to store backups into.").Required().Short('d').ExistingDir()
@@ -41,9 +38,9 @@ var (
 
 	snpCmd = kingpin.Command("snap", "Commands related to the snap(s)").Alias("s")
 
-	snapCmd      = snpCmd.Command("take", "Takes a new snapshot of the roots.").Alias("do")
-	snapCompress = snapCmd.Flag("compress", "Compresses the stored files.").Short('z').Bool()
-	snapLabel    = snapCmd.Flag("label", "Label for this snap.").Short('l').Default("").String()
+	snapCmd        = snpCmd.Command("do", "Takes a new snapshot of the roots.")
+	snapNoCompress = snapCmd.Flag("no-compress", "Doesn't compress the stored files.").Bool()
+	snapLabel      = snapCmd.Flag("label", "Label for this snap.").Short('l').Default("").String()
 
 	listSnapsCmd = snpCmd.Command("list", "Lists the snaps currently in the pool").Alias("ls")
 
@@ -55,8 +52,8 @@ var (
 	relDirToRestore   = restoreCmd.Arg("restore-dir", "The dir to restore into. Must exist and be empty.").Required().ExistingDir()
 	restorePrefixPath = restoreCmd.Flag("prefix-path", "Only the files whose path starts with this prefix are considered.").String()
 
-	infoSnapCmd = snpCmd.Command("info", "Gives relevant information on a snap.")
-	snapToInfo  = infoSnapCmd.Arg("snap", "The snap to give info about.").Required().Int()
+	infoSnapCmd = snpCmd.Command("info", "Gives relevant information on a snap or on all snaps.")
+	snapToInfo  = infoSnapCmd.Arg("snap", "The snap to give info about.").Default("-1").Int()
 
 	listSnapCmd = snpCmd.Command("filelist", "Prints the list of files for a snap.").Alias("fl")
 	snapToList  = listSnapCmd.Arg("snap", "The snap to list files for.").Required().Int()
@@ -64,9 +61,43 @@ var (
 	labelSnapCmd   = snpCmd.Command("label", "Sets or changes the label of a snap.").Alias("lbl")
 	snapToLabel    = labelSnapCmd.Arg("snap", "The snap to label.").Required().Int()
 	labelSnapLabel = labelSnapCmd.Arg("label", "The label.").Required().String()
+
+	checkSnapCmd = snpCmd.Command("check", "Checks the on-disk structures for problems.").Alias("ck")
+
+	aggloCmd = kingpin.Command("agglo", "Commands related to agglo(meration)s of smaller files").Alias("a")
+
+	aggloCalcCmd = aggloCmd.Command("calc", "Calculates how much files can be deleted by agglomerating.").Alias("c")
+	acThreshold  = aggloCalcCmd.Arg("threshold", "Files smaller than this size (in Mb) will be merged.").Required().Int()
+	acTarget     = aggloCalcCmd.Arg("target", "Target size for the agglomeration files (in Mb).").Required().Int()
+
+	aggloDoCmd  = aggloCmd.Command("do", "Perform agglomerations.")
+	adThreshold = aggloDoCmd.Arg("threshold", "Files smaller than this size (in Mb) will be merged.").Required().Int()
+	adTarget    = aggloDoCmd.Arg("target", "Target size for the agglomeration files (in Mb).").Required().Int()
+
+	aggloUnpackCmd = aggloCmd.Command("unpack", "Unpacks and removes all the agglomerations.").Alias("x")
 )
 
-func app() (errApp error) {
+func init() {
+	rand.Seed(time.Now().UnixMilli())
+}
+
+func exec(pwd, bkpDir string, save bool, block func(modl *model.Model) error) error {
+	modl, errLoadingModel := model.LoadModel(pwd, bkpDir)
+	if errLoadingModel != nil {
+		return errLoadingModel
+	}
+	if errExecutingPayload := block(modl); errExecutingPayload != nil {
+		return errExecutingPayload
+	}
+	if save {
+		if errSavingModel := model.SaveModel(pwd, bkpDir, *modl); errSavingModel != nil {
+			return errSavingModel
+		}
+	}
+	return nil
+}
+
+func app(pwd string) (errApp error) {
 	kingpin.Version(util.Banner(version))
 
 	cliResult := kingpin.Parse()
@@ -77,45 +108,57 @@ func app() (errApp error) {
 		switch cliResult {
 
 		case initCmd.FullCommand():
-			errApp = initcmd.Init(bkpDir)
+			errApp = initcmd.Init(pwd, bkpDir)
 
 		case addRootCmd.FullCommand():
 			if rootToAdd, errAbsolutizing := filepath.Abs(*relRootToAdd); errAbsolutizing != nil {
 				errApp = errAbsolutizing
 			} else {
-				errApp = addroot.AddRoot(bkpDir, rootToAdd)
+				errApp = exec(pwd, bkpDir, true, root.Add(rootToAdd))
 			}
 
 		case listRootsCmd.FullCommand():
-			errApp = listroots.ListRoots(bkpDir)
+			errApp = exec(pwd, bkpDir, false, root.List())
 
 		case delRootCmd.FullCommand():
-			errApp = delroot.DelRoot(bkpDir, *rootToDel)
+			errApp = exec(pwd, bkpDir, true, root.Delete(*rootToDel))
 
 		case snapCmd.FullCommand():
-			errApp = snap.Snap(bkpDir, *snapCompress, *snapLabel)
+			errApp = exec(pwd, bkpDir, true, snap.Do(bkpDir, *snapNoCompress, *snapLabel))
 
 		case listSnapsCmd.FullCommand():
-			errApp = listsnaps.ListSnaps(bkpDir)
+			errApp = exec(pwd, bkpDir, false, snap.List())
 
 		case delSnapCmd.FullCommand():
-			errApp = delsnaps.DelSnap(bkpDir, *snapToDel)
+			errApp = exec(pwd, bkpDir, true, snap.Delete(bkpDir, *snapToDel))
 
 		case restoreCmd.FullCommand():
 			if dirToRestore, errAbsolutizing := filepath.Abs(*relDirToRestore); errAbsolutizing != nil {
 				errApp = errAbsolutizing
 			} else {
-				errApp = restore.Restore(bkpDir, *snapToRestore, dirToRestore, restorePrefixPath)
+				errApp = exec(pwd, bkpDir, false, snap.Restore(bkpDir, *snapToRestore, dirToRestore, restorePrefixPath))
 			}
 
 		case infoSnapCmd.FullCommand():
-			errApp = info_snap.InfoSnap(bkpDir, *snapToInfo)
+			errApp = exec(pwd, bkpDir, false, snap.Info(*snapToInfo))
 
 		case listSnapCmd.FullCommand():
-			errApp = list_snap.ListSnap(bkpDir, *snapToList)
+			errApp = exec(pwd, bkpDir, false, snap.FileList(*snapToList))
 
 		case labelSnapCmd.FullCommand():
-			errApp = labelsnap.LabelSnap(bkpDir, *snapToLabel, *labelSnapLabel)
+			errApp = exec(pwd, bkpDir, true, snap.Label(*snapToLabel, *labelSnapLabel))
+
+		case checkSnapCmd.FullCommand():
+			errApp = exec(pwd, bkpDir, false, snap.Check(bkpDir))
+
+		case aggloCalcCmd.FullCommand():
+			errApp = exec(pwd, bkpDir, false, agglo.Calc(*acThreshold*util.Mega, *acTarget*util.Mega))
+
+		case aggloDoCmd.FullCommand():
+			errApp = exec(pwd, bkpDir, true, agglo.Do(bkpDir, *adThreshold*util.Mega, *adTarget*util.Mega))
+
+		case aggloUnpackCmd.FullCommand():
+			errApp = exec(pwd, bkpDir, true, agglo.Unpack(bkpDir))
 		}
 	}
 
@@ -123,7 +166,13 @@ func app() (errApp error) {
 }
 
 func main() {
-	if errApp := app(); errApp != nil {
+	pwd := os.Getenv("SNAPKUP_PASSWORD")
+	if pwd == "" {
+		fmt.Fprint(os.Stderr, "ERROR: password not declared\n")
+		os.Exit(1)
+	}
+
+	if errApp := app(pwd); errApp != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: %v\n", errApp)
 		os.Exit(1)
 	}

@@ -1,6 +1,7 @@
 snapkup
 bin/
 test/
+.idea/
 
 # Created by https://www.toptal.com/developers/gitignore/api/go,visualstudiocode,macos,linux,windows
 # Edit at https://www.toptal.com/developers/gitignore?templates=go,visualstudiocode,macos,linux,windows
