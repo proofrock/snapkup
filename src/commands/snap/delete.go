@@ -30,7 +30,9 @@ func Delete(bkpDir string, toDel int) func(modl *model.Model) error {
 
 		blobsToDel := make(map[string]bool)
 		for _, blob := range modl.Blobs {
-			blobsToDel[blob.Hash] = true
+			if blob.AggloRef == nil {
+				blobsToDel[blob.Hash] = true
+			}
 		}
 
 		for _, item := range modl.Items {
