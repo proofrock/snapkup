@@ -1,4 +1,4 @@
-# 🗃️ snapkup v0.2.0
+# 🗃️ snapkup v0.3.0
 
 Snapkup is a simple backup tool that takes snapshots of your filesystem (or the parts that you'll decide), storing them
 efficiently and conveniently.
