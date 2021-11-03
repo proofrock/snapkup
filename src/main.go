@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	"os"
@@ -19,7 +20,7 @@ import (
 	"github.com/proofrock/snapkup/util"
 )
 
-const version = "v0.3.0"
+const version = "v0.3.1"
 
 var (
 	relBkpDir = kingpin.Flag("backup-dir", "The directory to store backups into.").Required().Short('d').ExistingDir()
@@ -81,7 +82,12 @@ func init() {
 	rand.Seed(time.Now().UnixMilli())
 }
 
-func exec(pwd, bkpDir string, save bool, block func(modl *model.Model) error) error {
+func exec(bkpDir string, save bool, block func(modl *model.Model) error) error {
+	pwd, errGettingPwd := getPwd()
+	if errGettingPwd != nil {
+		return errGettingPwd
+	}
+
 	modl, errLoadingModel := model.LoadModel(pwd, bkpDir)
 	if errLoadingModel != nil {
 		return errLoadingModel
@@ -97,7 +103,7 @@ func exec(pwd, bkpDir string, save bool, block func(modl *model.Model) error) er
 	return nil
 }
 
-func app(pwd string) (errApp error) {
+func app() (errApp error) {
 	kingpin.Version(util.Banner(version))
 
 	cliResult := kingpin.Parse()
@@ -108,71 +114,78 @@ func app(pwd string) (errApp error) {
 		switch cliResult {
 
 		case initCmd.FullCommand():
-			errApp = initcmd.Init(pwd, bkpDir)
+
+			if pwd, errGettingPwd := getPwd(); errGettingPwd != nil {
+				errApp = errGettingPwd
+			} else {
+				errApp = initcmd.Init(pwd, bkpDir)
+			}
 
 		case addRootCmd.FullCommand():
 			if rootToAdd, errAbsolutizing := filepath.Abs(*relRootToAdd); errAbsolutizing != nil {
 				errApp = errAbsolutizing
 			} else {
-				errApp = exec(pwd, bkpDir, true, root.Add(rootToAdd))
+				errApp = exec(bkpDir, true, root.Add(rootToAdd))
 			}
 
 		case listRootsCmd.FullCommand():
-			errApp = exec(pwd, bkpDir, false, root.List())
+			errApp = exec(bkpDir, false, root.List())
 
 		case delRootCmd.FullCommand():
-			errApp = exec(pwd, bkpDir, true, root.Delete(*rootToDel))
+			errApp = exec(bkpDir, true, root.Delete(*rootToDel))
 
 		case snapCmd.FullCommand():
-			errApp = exec(pwd, bkpDir, true, snap.Do(bkpDir, *snapNoCompress, *snapLabel))
+			errApp = exec(bkpDir, true, snap.Do(bkpDir, *snapNoCompress, *snapLabel))
 
 		case listSnapsCmd.FullCommand():
-			errApp = exec(pwd, bkpDir, false, snap.List())
+			errApp = exec(bkpDir, false, snap.List())
 
 		case delSnapCmd.FullCommand():
-			errApp = exec(pwd, bkpDir, true, snap.Delete(bkpDir, *snapToDel))
+			errApp = exec(bkpDir, true, snap.Delete(bkpDir, *snapToDel))
 
 		case restoreCmd.FullCommand():
 			if dirToRestore, errAbsolutizing := filepath.Abs(*relDirToRestore); errAbsolutizing != nil {
 				errApp = errAbsolutizing
 			} else {
-				errApp = exec(pwd, bkpDir, false, snap.Restore(bkpDir, *snapToRestore, dirToRestore, restorePrefixPath))
+				errApp = exec(bkpDir, false, snap.Restore(bkpDir, *snapToRestore, dirToRestore, restorePrefixPath))
 			}
 
 		case infoSnapCmd.FullCommand():
-			errApp = exec(pwd, bkpDir, false, snap.Info(*snapToInfo))
+			errApp = exec(bkpDir, false, snap.Info(*snapToInfo))
 
 		case listSnapCmd.FullCommand():
-			errApp = exec(pwd, bkpDir, false, snap.FileList(*snapToList))
+			errApp = exec(bkpDir, false, snap.FileList(*snapToList))
 
 		case labelSnapCmd.FullCommand():
-			errApp = exec(pwd, bkpDir, true, snap.Label(*snapToLabel, *labelSnapLabel))
+			errApp = exec(bkpDir, true, snap.Label(*snapToLabel, *labelSnapLabel))
 
 		case checkSnapCmd.FullCommand():
-			errApp = exec(pwd, bkpDir, false, snap.Check(bkpDir))
+			errApp = exec(bkpDir, false, snap.Check(bkpDir))
 
 		case aggloCalcCmd.FullCommand():
-			errApp = exec(pwd, bkpDir, false, agglo.Calc(*acThreshold*util.Mega, *acTarget*util.Mega))
+			errApp = exec(bkpDir, false, agglo.Calc(*acThreshold*util.Mega, *acTarget*util.Mega))
 
 		case aggloDoCmd.FullCommand():
-			errApp = exec(pwd, bkpDir, true, agglo.Do(bkpDir, *adThreshold*util.Mega, *adTarget*util.Mega))
+			errApp = exec(bkpDir, true, agglo.Do(bkpDir, *adThreshold*util.Mega, *adTarget*util.Mega))
 
 		case aggloUnpackCmd.FullCommand():
-			errApp = exec(pwd, bkpDir, true, agglo.Unpack(bkpDir))
+			errApp = exec(bkpDir, true, agglo.Unpack(bkpDir))
 		}
 	}
 
 	return errApp
 }
 
-func main() {
+func getPwd() (string, error) {
 	pwd := os.Getenv("SNAPKUP_PASSWORD")
 	if pwd == "" {
-		fmt.Fprint(os.Stderr, "ERROR: password not declared\n")
-		os.Exit(1)
+		return "", errors.New("password not declared")
 	}
+	return pwd, nil
+}
 
-	if errApp := app(pwd); errApp != nil {
+func main() {
+	if errApp := app(); errApp != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: %v\n", errApp)
 		os.Exit(1)
 	}
