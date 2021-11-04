@@ -1,0 +1,2 @@
+# copy to home dir and (if on UNIX) make it user-accessible only (i.e. 0600)
+profile:password

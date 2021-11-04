@@ -1,11 +1,15 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"math/rand"
 	"os"
+	"path"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"time"
 
 	"github.com/proofrock/snapkup/commands/agglo"
@@ -23,7 +27,8 @@ import (
 const version = "v0.3.1"
 
 var (
-	relBkpDir = kingpin.Flag("backup-dir", "The directory to store backups into.").Required().Short('d').ExistingDir()
+	relBkpDir  = kingpin.Flag("backup-dir", "The directory to store backups into.").Required().Short('d').ExistingDir()
+	profileArg = kingpin.Flag("profile", "The profile for which to get the password from the credentials file.").Short('p').String()
 
 	initCmd = kingpin.Command("init", "Initializes an empty backups directory.")
 
@@ -83,7 +88,7 @@ func init() {
 }
 
 func exec(bkpDir string, save bool, block func(modl *model.Model) error) error {
-	pwd, errGettingPwd := getPwd()
+	pwd, errGettingPwd := getPwd(profileArg)
 	if errGettingPwd != nil {
 		return errGettingPwd
 	}
@@ -115,7 +120,7 @@ func app() (errApp error) {
 
 		case initCmd.FullCommand():
 
-			if pwd, errGettingPwd := getPwd(); errGettingPwd != nil {
+			if pwd, errGettingPwd := getPwd(profileArg); errGettingPwd != nil {
 				errApp = errGettingPwd
 			} else {
 				errApp = initcmd.Init(pwd, bkpDir)
@@ -176,7 +181,48 @@ func app() (errApp error) {
 	return errApp
 }
 
-func getPwd() (string, error) {
+func getPwd(profile *string) (string, error) {
+	if profile != nil {
+		// try loading ~/.snapkup-creds
+		homeDir, errGettingHomeDir := os.UserHomeDir()
+		if errGettingHomeDir != nil {
+			return "", errGettingHomeDir
+		}
+		path := path.Join(homeDir, ".snapkup-creds")
+		stat, errStating := os.Stat(path)
+		if errStating != nil {
+			return "", errors.New("credentials file (~/.snapkup-creds) not found")
+		}
+		if runtime.GOOS != "windows" && stat.Mode().Perm() != 0600 {
+			return "", errors.New("credentials file shouldn't be group- or world- readable (0600 permissions)")
+		}
+		creds, errReading := os.Open(path)
+		if errReading != nil {
+			return "", errors.New(fmt.Sprintf("error opening credentials file: %v", errReading))
+		}
+		defer creds.Close()
+		scanner := bufio.NewScanner(creds)
+		for scanner.Scan() {
+			row := scanner.Text()
+			if strings.HasPrefix(row, "#") || strings.TrimSpace(row) == "" {
+				continue
+			}
+			index := strings.Index(row, ":")
+			if index < 0 {
+				return "", errors.New(fmt.Sprintf("malformed credentials row: %s", row))
+			}
+			if row[:index] == *profile {
+				return row[index+1:], nil
+			}
+		}
+
+		if errScanning := scanner.Err(); errScanning != nil {
+			return "", errScanning
+		}
+
+		return "", errors.New(fmt.Sprintf("password not found for profile %s", *profile))
+	}
+
 	pwd := os.Getenv("SNAPKUP_PASSWORD")
 	if pwd == "" {
 		return "", errors.New("password not declared")

@@ -42,13 +42,36 @@ backup structures. This example is styled after windows, but it's completely sim
 
 ### Set the encryption password
 
-For now, it's read from an environment variable, `SNAPKUP_PASSWORD`, so you can use:
+#### From env var
+
+The encryption password can be read from an environment variable, `SNAPKUP_PASSWORD`, so you can use:
 
 ```
 [UNIX/BASH]      export SNAPKUP_PASSWORD=MyCoolPwd
 [WIN/CMD]        set "SNAPKUP_PASSWORD=MyCoolPwd"
 [WIN/POWERSHELL] $env:SNAPKUP_PASSWORD = 'MyCoolPwd'
 ```
+
+### From credentials file
+
+You can create a `.snapkup-creds` file in your home dir, and assign a password to a profile:
+
+```
+myProfile:MyCoolPwd
+```
+
+Then start snapkup specifying the profile:
+
+```
+snapkup --profile myProfile ...
+```
+
+Under UNIX, the file must be user-readable only (i.e. permissions `0600` or `-rw-------`). Under Windows, there's
+no reliable way to enforce this, so use it at your own risk.
+
+It can contain as many profiles as you like, for usage for different "instances" of snapkup. The profile is the part
+of each row up until the first `:` and the password is the rest of the row. Rows that start with `#` or are empty are
+treated as comments.
 
 ### Initialize the backup directory
 
