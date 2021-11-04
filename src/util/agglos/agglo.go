@@ -5,13 +5,13 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/proofrock/snapkup/model"
-	"github.com/proofrock/snapkup/util"
 	"io"
 	"math/rand"
 	"os"
-	"path"
 	"strings"
+
+	"github.com/proofrock/snapkup/model"
+	"github.com/proofrock/snapkup/util"
 )
 
 func Plan(modl *model.Model, treshold, target int64) (agglos map[string][]string, blobs map[string]model.AggloRef, err error) {
@@ -56,7 +56,7 @@ var magicNumber = []byte("SNP+1")
 
 func Apply(modl *model.Model, bkpDir string, agglos map[string][]string, blobs map[string]model.AggloRef) error {
 	for aggloId, blobsForAgglo := range agglos {
-		dstPath := path.Join(bkpDir, aggloId[1:2], aggloId)
+		dstPath := model.AggloIdToPath(bkpDir, aggloId)
 		dst, errCreatingAgglo := os.Create(dstPath)
 		if errCreatingAgglo != nil {
 			return errCreatingAgglo
@@ -68,7 +68,7 @@ func Apply(modl *model.Model, bkpDir string, agglos map[string][]string, blobs m
 		}
 
 		for _, blobToAdd := range blobsForAgglo {
-			src, errOpeningBlob := os.Open(path.Join(bkpDir, blobToAdd[0:1], blobToAdd))
+			src, errOpeningBlob := os.Open(model.HashToPath(bkpDir, blobToAdd))
 			if errOpeningBlob != nil {
 				return errOpeningBlob
 			}
@@ -100,7 +100,7 @@ func Apply(modl *model.Model, bkpDir string, agglos map[string][]string, blobs m
 
 	for _, blobsForAgglo := range agglos {
 		for _, blobToDel := range blobsForAgglo {
-			fpBTD := path.Join(bkpDir, blobToDel[0:1], blobToDel)
+			fpBTD := model.HashToPath(bkpDir, blobToDel)
 			if errDeleting := os.Remove(fpBTD); errDeleting != nil {
 				fmt.Fprintf(os.Stderr, "ERROR: deleting file %s; %v\n", fpBTD, errDeleting)
 			}
@@ -171,7 +171,7 @@ func SplitAll(modl *model.Model, bkpDir string) error {
 
 		aggloRef := *blob.AggloRef
 
-		src, errOpening := os.Open(path.Join(bkpDir, aggloRef.AggloID[1:2], aggloRef.AggloID))
+		src, errOpening := os.Open(model.AggloIdToPath(bkpDir, aggloRef.AggloID))
 		if errOpening != nil {
 			return errOpening
 		}
@@ -182,7 +182,7 @@ func SplitAll(modl *model.Model, bkpDir string) error {
 			return errOpeningPieceReader
 		}
 
-		dst, errCreating := os.Create(path.Join(bkpDir, blob.Hash[0:1], blob.Hash))
+		dst, errCreating := os.Create(model.HashToPath(bkpDir, blob.Hash))
 		if errCreating != nil {
 			return errCreating
 		}
@@ -202,7 +202,7 @@ func SplitAll(modl *model.Model, bkpDir string) error {
 	}
 
 	for _, agglo := range modl.Agglos {
-		if errDeleting := os.Remove(path.Join(bkpDir, agglo.ID[1:2], agglo.ID)); errDeleting != nil {
+		if errDeleting := os.Remove(model.AggloIdToPath(bkpDir, agglo.ID)); errDeleting != nil {
 			fmt.Fprintf(os.Stderr, "ERROR: deleting file %s; %v\n", agglo.ID, errDeleting)
 		}
 	}

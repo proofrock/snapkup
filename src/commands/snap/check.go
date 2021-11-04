@@ -2,12 +2,12 @@ package snap
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/proofrock/snapkup/model"
 	"github.com/proofrock/snapkup/util"
 	"github.com/proofrock/snapkup/util/agglos"
 	"github.com/proofrock/snapkup/util/streams"
-	"os"
-	"path"
 )
 
 func Check(bkpDir string) func(modl *model.Model) error {
@@ -54,7 +54,7 @@ func Check(bkpDir string) func(modl *model.Model) error {
 }
 
 func ckAgglo(modl *model.Model, bkpDir string, agglo model.Agglo) {
-	fpath := path.Join(bkpDir, agglo.ID[1:2], agglo.ID)
+	fpath := model.AggloIdToPath(bkpDir, agglo.ID)
 	hash, errHashing := util.FileHash(fpath, modl.Key4Hashes)
 	if errHashing != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: hashing agglo %s; %v\n", agglo.ID, errHashing)
@@ -64,7 +64,7 @@ func ckAgglo(modl *model.Model, bkpDir string, agglo model.Agglo) {
 }
 
 func ckNormalBlob(modl *model.Model, bkpDir string, blob model.Blob) {
-	source, errOpening := os.Open(path.Join(bkpDir, blob.Hash[0:1], blob.Hash))
+	source, errOpening := os.Open(model.HashToPath(bkpDir, blob.Hash))
 	if errOpening != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: opening blob %s; %v\n", blob.Hash, errOpening)
 		return
@@ -88,7 +88,7 @@ func ckNormalBlob(modl *model.Model, bkpDir string, blob model.Blob) {
 
 func ckBlobInAgglo(modl *model.Model, bkpDir string, blob model.Blob) {
 	agglo := *blob.AggloRef
-	source, errOpening := os.Open(path.Join(bkpDir, agglo.AggloID[1:2], agglo.AggloID))
+	source, errOpening := os.Open(model.AggloIdToPath(bkpDir, agglo.AggloID))
 	if errOpening != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: opening blob %s; %v\n", blob.Hash, errOpening)
 		return

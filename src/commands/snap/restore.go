@@ -3,7 +3,6 @@ package snap
 import (
 	"errors"
 	"fmt"
-	"github.com/proofrock/snapkup/util/agglos"
 	"io"
 	"io/fs"
 	"os"
@@ -11,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/proofrock/snapkup/util/agglos"
 
 	"github.com/proofrock/snapkup/model"
 	"github.com/proofrock/snapkup/util"
@@ -66,12 +67,12 @@ func Restore(bkpDir string, snap int, restoreDir string, restorePrefixPath *stri
 				} else {
 					blob := blobs[item.Hash]
 					if blob.AggloRef == nil {
-						source := path.Join(bkpDir, item.Hash[0:1], item.Hash)
+						source := model.HashToPath(bkpDir, item.Hash)
 						if errCopying := restore(modl.Key4Enc, source, dest); errCopying != nil {
 							return errCopying
 						}
 					} else {
-						source := path.Join(bkpDir, (*blob.AggloRef).AggloID[1:2], (*blob.AggloRef).AggloID)
+						source := model.AggloIdToPath(bkpDir, (*blob.AggloRef).AggloID)
 						if errCopying := restoreFromAgglo(modl.Key4Enc, (*blob.AggloRef).Offset, blob.BlobSize, source, dest); errCopying != nil {
 							return errCopying
 						}

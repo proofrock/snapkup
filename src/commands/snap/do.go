@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
 	"sort"
 	"time"
 
@@ -79,7 +78,7 @@ func Do(bkpDir string, dontCompress bool, label string) func(modl *model.Model) 
 			tot := len(newHashes)
 			bar := pb.Full.Start(tot)
 			for hash, finfo := range newHashes {
-				pathDest := path.Join(bkpDir, hash[0:1], hash)
+				pathDest := model.HashToPath(bkpDir, hash)
 
 				bar.Increment()
 				i++
