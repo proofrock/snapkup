@@ -27,8 +27,9 @@ import (
 const version = "v0.3.1"
 
 var (
-	relBkpDir  = kingpin.Flag("backup-dir", "The directory to store backups into.").Required().Short('d').ExistingDir()
-	profileArg = kingpin.Flag("profile", "The profile for which to get the password from the credentials file.").Short('p').String()
+	relBkpDir       = kingpin.Flag("backup-dir", "The directory to store backups into.").Required().Short('d').ExistingDir()
+	profileArg      = kingpin.Flag("profile", "The profile for which to get the password from the credentials file.").Short('p').String()
+	noPwdPromptFlag = kingpin.Flag("no-pwd-prompt", "Won't fallback to prompt for password if other methods fail.").Bool()
 
 	initCmd = kingpin.Command("init", "Initializes an empty backups directory.")
 
@@ -88,7 +89,7 @@ func init() {
 }
 
 func exec(bkpDir string, save bool, block func(modl *model.Model) error) error {
-	pwd, errGettingPwd := getPwd(profileArg)
+	pwd, errGettingPwd := getPwd(false)
 	if errGettingPwd != nil {
 		return errGettingPwd
 	}
@@ -120,7 +121,7 @@ func app() (errApp error) {
 
 		case initCmd.FullCommand():
 
-			if pwd, errGettingPwd := getPwd(profileArg); errGettingPwd != nil {
+			if pwd, errGettingPwd := getPwd(true); errGettingPwd != nil {
 				errApp = errGettingPwd
 			} else {
 				errApp = initcmd.Init(pwd, bkpDir)
@@ -152,7 +153,7 @@ func app() (errApp error) {
 			if dirToRestore, errAbsolutizing := filepath.Abs(*relDirToRestore); errAbsolutizing != nil {
 				errApp = errAbsolutizing
 			} else {
-				errApp = exec(bkpDir, false, snap.Restore(bkpDir, *snapToRestore, dirToRestore, restorePrefixPath))
+				errApp = exec(bkpDir, false, snap.Restore(bkpDir, *snapToRestore, dirToRestore, *restorePrefixPath))
 			}
 
 		case infoSnapCmd.FullCommand():
@@ -181,8 +182,8 @@ func app() (errApp error) {
 	return errApp
 }
 
-func getPwd(profile *string) (string, error) {
-	if profile != nil {
+func getPwd(first bool) (string, error) {
+	if *profileArg != "" {
 		// try loading ~/.snapkup-creds
 		homeDir, errGettingHomeDir := os.UserHomeDir()
 		if errGettingHomeDir != nil {
@@ -211,7 +212,7 @@ func getPwd(profile *string) (string, error) {
 			if index < 0 {
 				return "", errors.New(fmt.Sprintf("malformed credentials row: %s", row))
 			}
-			if row[:index] == *profile {
+			if row[:index] == *profileArg {
 				return row[index+1:], nil
 			}
 		}
@@ -220,14 +221,30 @@ func getPwd(profile *string) (string, error) {
 			return "", errScanning
 		}
 
-		return "", errors.New(fmt.Sprintf("password not found for profile %s", *profile))
+		return "", errors.New(fmt.Sprintf("password not found for profile %s", *profileArg))
 	}
 
-	pwd := os.Getenv("SNAPKUP_PASSWORD")
-	if pwd == "" {
-		return "", errors.New("password not declared")
+	if pwd, present := os.LookupEnv("SNAPKUP_PASSWORD"); !present {
+		if *noPwdPromptFlag {
+			return "", errors.New("Password not provided as env var, nor via --profile argument. Aborting.")
+		}
+		println("Password not provided as env var, nor via --profile argument.")
+		print("Please provide a password")
+		if first {
+			println(" for init.")
+			pwd1 := util.GetPassword("Password: ")
+			pwd2 := util.GetPassword("Repeat: ")
+			if pwd1 != pwd2 {
+				return "", errors.New("passwords do not match")
+			}
+			return pwd1, nil
+		} else {
+			println(".")
+			return util.GetPassword("Password: "), nil
+		}
+	} else {
+		return pwd, nil
 	}
-	return pwd, nil
 }
 
 func main() {

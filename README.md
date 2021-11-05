@@ -52,7 +52,7 @@ The encryption password can be read from an environment variable, `SNAPKUP_PASSW
 [WIN/POWERSHELL] $env:SNAPKUP_PASSWORD = 'MyCoolPwd'
 ```
 
-### From credentials file
+#### From credentials file
 
 You can create a `.snapkup-creds` file in your home dir, and assign a password to a profile:
 
@@ -72,6 +72,11 @@ no reliable way to enforce this, so use it at your own risk.
 It can contain as many profiles as you like, for usage for different "instances" of snapkup. The profile is the part
 of each row up until the first `:` and the password is the rest of the row. Rows that start with `#` or are empty are
 treated as comments.
+
+#### From prompt
+
+If the password is not provide with the methods above, it will be prompted for, unless the `--no-pwd-prompt` flag is
+specified. For batch operations, consider to always specify it.
 
 ### Initialize the backup directory
 
