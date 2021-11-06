@@ -33,7 +33,7 @@ Plans for the future:
 
 ## Documentation
 
-Please see the [GitBook Documentation](https://me0-4.gitbook.io/snapkup/) that sports a tutorial and the documentation for all the commands!
+Please see the [GitBook Documentation](https://germ.gitbook.io/snapkup/) that sports a tutorial and the documentation for all the commands!
 
 ## Status
 
