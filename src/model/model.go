@@ -176,3 +176,11 @@ func SaveModel(pwd string, dir string, modl Model) error {
 
 	return nil
 }
+
+func HashToPath(dir, hash string) string {
+	return path.Join(dir, hash[0:1], hash)
+}
+
+func AggloIdToPath(dir, aggloId string) string {
+	return path.Join(dir, aggloId[1:2], aggloId)
+}

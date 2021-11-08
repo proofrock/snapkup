@@ -16,4 +16,5 @@ build:
 
 zbuild:
 	make build
-	upx --lzma bin/snapkup 
+	upx --lzma bin/snapkup
+	cd bin; 7zr a -mx9 -t7z snapkup-linux-`uname -m`.7z snapkup
