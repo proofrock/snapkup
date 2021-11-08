@@ -24,7 +24,7 @@ import (
 	"github.com/proofrock/snapkup/util"
 )
 
-const version = "v0.3.2"
+const version = "v0.3.2.1"
 
 var (
 	relBkpDir       = kingpin.Flag("backup-dir", "The directory to store backups into.").Required().Short('d').ExistingDir()
