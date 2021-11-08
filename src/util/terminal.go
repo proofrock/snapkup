@@ -13,7 +13,7 @@ import (
 
 func GetPassword(prompt string) string {
 	// Get the initial state of the terminal.
-	initialTermState, e1 := terminal.GetState(syscall.Stdin)
+	initialTermState, e1 := terminal.GetState(int(syscall.Stdin))
 	if e1 != nil {
 		panic(e1)
 	}
@@ -24,13 +24,13 @@ func GetPassword(prompt string) string {
 	signal.Notify(c, os.Interrupt, os.Kill)
 	go func() {
 		<-c
-		_ = terminal.Restore(syscall.Stdin, initialTermState)
+		_ = terminal.Restore(int(syscall.Stdin), initialTermState)
 		os.Exit(1)
 	}()
 
 	// Now get the password.
 	fmt.Print(prompt)
-	p, err := terminal.ReadPassword(syscall.Stdin)
+	p, err := terminal.ReadPassword(int(syscall.Stdin))
 	fmt.Println("")
 	if err != nil {
 		panic(err)
