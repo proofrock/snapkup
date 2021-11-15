@@ -34,7 +34,7 @@ func Init(pwd string, bkpDir string) error {
 		}
 	}
 
-	fmt.Printf("Backup directory correctly initialized in %s\n", bkpDir)
+	util.PrintlnfOut("Backup directory correctly initialized in %s", bkpDir)
 
 	return nil
 }

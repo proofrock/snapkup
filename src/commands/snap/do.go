@@ -1,7 +1,6 @@
 package snap
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"sort"
@@ -16,7 +15,7 @@ import (
 func Do(bkpDir string, dontCompress bool, label string) func(modl *model.Model) error {
 	return func(modl *model.Model) error {
 		files, numFiles, numDirs := walkFSTree(modl.Roots, modl.Key4Hashes, true)
-		fmt.Printf("Found %d files and %d directories.\n", numFiles, numDirs)
+		util.PrintlnfOut("Found %d files and %d directories.", numFiles, numDirs)
 
 		sort.Slice(files, func(i int, j int) bool { return files[i].FullPath < files[j].FullPath })
 
@@ -70,7 +69,7 @@ func Do(bkpDir string, dontCompress bool, label string) func(modl *model.Model) 
 			}
 		}
 
-		fmt.Printf("%d new blobs to write\n", len(newHashes))
+		util.PrintlnfOut("%d new blobs to write", len(newHashes))
 
 		if len(newHashes) > 0 {
 			// Iterates over the blobs to write, and writes them (compressing or not)
@@ -93,7 +92,7 @@ func Do(bkpDir string, dontCompress bool, label string) func(modl *model.Model) 
 		}
 
 		// TODO write this only after actual commit
-		fmt.Printf("Snap %d correctly created\n", snap)
+		util.PrintlnfOut("Snap %d correctly created", snap)
 
 		return nil
 	}

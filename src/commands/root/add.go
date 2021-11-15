@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/proofrock/snapkup/model"
+	"github.com/proofrock/snapkup/util"
 )
 
 func Add(toAdd string) func(modl *model.Model) error {
@@ -16,7 +17,7 @@ func Add(toAdd string) func(modl *model.Model) error {
 
 		modl.Roots = append(modl.Roots, toAdd)
 
-		fmt.Printf("Root correctly added (%s)\n", toAdd)
+		util.PrintlnfOut("Root correctly added (%s)", toAdd)
 
 		return nil
 	}

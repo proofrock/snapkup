@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"io"
 	"math/rand"
 	"os"
@@ -102,7 +101,7 @@ func Apply(modl *model.Model, bkpDir string, agglos map[string][]string, blobs m
 		for _, blobToDel := range blobsForAgglo {
 			fpBTD := model.HashToPath(bkpDir, blobToDel)
 			if errDeleting := os.Remove(fpBTD); errDeleting != nil {
-				fmt.Fprintf(os.Stderr, "ERROR: deleting file %s; %v\n", fpBTD, errDeleting)
+				util.PrintlnfErr("ERROR: deleting file %s; %v", fpBTD, errDeleting)
 			}
 		}
 	}
@@ -203,7 +202,7 @@ func SplitAll(modl *model.Model, bkpDir string) error {
 
 	for _, agglo := range modl.Agglos {
 		if errDeleting := os.Remove(model.AggloIdToPath(bkpDir, agglo.ID)); errDeleting != nil {
-			fmt.Fprintf(os.Stderr, "ERROR: deleting file %s; %v\n", agglo.ID, errDeleting)
+			util.PrintlnfErr("ERROR: deleting file %s; %v", agglo.ID, errDeleting)
 		}
 	}
 

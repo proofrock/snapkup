@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/proofrock/snapkup/model"
+	"github.com/proofrock/snapkup/util"
 )
 
 func FileList(snap int) func(modl *model.Model) error {
@@ -23,7 +24,7 @@ func FileList(snap int) func(modl *model.Model) error {
 		sort.Strings(list)
 
 		for _, path := range list {
-			println(path)
+			util.PrintlnOut(path)
 		}
 
 		return nil

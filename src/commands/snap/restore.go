@@ -45,7 +45,7 @@ func Restore(bkpDir string, snap int, restoreDir string, restorePrefixPath strin
 			}
 		}
 
-		fmt.Printf("Loaded %d files and %d directories.\n", numFiles, numDirs)
+		util.PrintlnfOut("Loaded %d files and %d directories.", numFiles, numDirs)
 
 		blobs := make(map[string]model.Blob)
 		for _, blob := range modl.Blobs {
@@ -102,7 +102,7 @@ func Restore(bkpDir string, snap int, restoreDir string, restorePrefixPath strin
 			}
 		}
 
-		fmt.Printf("Snapshot %d restored correctly.\n", snap)
+		util.PrintlnfOut("Snapshot %d restored correctly.", snap)
 
 		return nil
 	}

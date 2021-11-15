@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/proofrock/snapkup/model"
+	"github.com/proofrock/snapkup/util"
 )
 
 const suffixes = "KMGTPE"
@@ -66,13 +67,13 @@ func Info(snap int) func(modl *model.Model) error {
 			}
 		}
 
-		fmt.Printf("Files                    : %d\n", nfo.Files)
-		fmt.Printf("Directories              : %d\n", nfo.Dirs)
-		fmt.Printf("Size                     : %s\n", fmtBytes(nfo.Size))
+		util.PrintlnfOut("Files                    : %d", nfo.Files)
+		util.PrintlnfOut("Directories              : %d", nfo.Dirs)
+		util.PrintlnfOut("Size                     : %s", fmtBytes(nfo.Size))
 		if snap > -1 {
-			fmt.Printf("Stored size              : %s\n", fmtBytes(nfo.StoredSize))
+			util.PrintlnfOut("Stored size              : %s", fmtBytes(nfo.StoredSize))
 		}
-		fmt.Printf("Tot. stored (all snaps)  : %s\n", fmtBytes(nfo.TotStored))
+		util.PrintlnfOut("Tot. stored (all snaps)  : %s", fmtBytes(nfo.TotStored))
 
 		return nil
 	}

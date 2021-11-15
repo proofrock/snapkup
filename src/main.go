@@ -228,10 +228,10 @@ func getPwd(first bool) (string, error) {
 		if *noPwdPromptFlag {
 			return "", errors.New("Password not provided as env var, nor via --profile argument. Aborting.")
 		}
-		println("Password not provided as env var, nor via --profile argument.")
-		print("Please provide a password")
+		util.PrintlnOut("Password not provided as env var, nor via --profile argument.")
+		util.PrintOut("Please provide a password")
 		if first {
-			println(" for init.")
+			util.PrintlnOut(" for init.")
 			pwd1 := util.GetPassword("Password: ")
 			pwd2 := util.GetPassword("Repeat: ")
 			if pwd1 != pwd2 {
@@ -239,7 +239,7 @@ func getPwd(first bool) (string, error) {
 			}
 			return pwd1, nil
 		} else {
-			println(".")
+			util.PrintlnOut(".")
 			return util.GetPassword("Password: "), nil
 		}
 	} else {
@@ -249,7 +249,7 @@ func getPwd(first bool) (string, error) {
 
 func main() {
 	if errApp := app(); errApp != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: %v\n", errApp)
+		util.PrintlnfErr("ERROR: %v", errApp)
 		os.Exit(1)
 	}
 }

@@ -1,7 +1,6 @@
 package util
 
 import (
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -29,9 +28,9 @@ func GetPassword(prompt string) string {
 	}()
 
 	// Now get the password.
-	fmt.Print(prompt)
+	PrintOut(prompt)
 	p, err := terminal.ReadPassword(int(syscall.Stdin))
-	fmt.Println("")
+	PrintlnOut("")
 	if err != nil {
 		panic(err)
 	}

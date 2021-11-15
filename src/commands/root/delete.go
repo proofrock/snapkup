@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/proofrock/snapkup/model"
+	"github.com/proofrock/snapkup/util"
 )
 
 func Delete(toDel string) func(modl *model.Model) error {
@@ -22,7 +23,7 @@ func Delete(toDel string) func(modl *model.Model) error {
 
 		modl.Roots = append(modl.Roots[:found], modl.Roots[found+1:]...)
 
-		fmt.Printf("Root correctly deleted (%s)\n", toDel)
+		util.PrintlnfOut("Root correctly deleted (%s)", toDel)
 
 		return nil
 	}

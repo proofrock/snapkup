@@ -1,12 +1,12 @@
 package snap
 
 import (
-	"fmt"
-	"github.com/proofrock/snapkup/model"
-	"github.com/proofrock/snapkup/util"
 	"io/fs"
 	"os"
 	"path/filepath"
+
+	"github.com/proofrock/snapkup/model"
+	"github.com/proofrock/snapkup/util"
 )
 
 func findSnap(modl *model.Model, snap int) int {
@@ -33,11 +33,11 @@ type fileNfo struct {
 func walkFSTree(roots []string, key []byte, doHash bool) (files []fileNfo, numFiles int, numDirs int) {
 	for _, root := range roots {
 		if froot, errStatsing := os.Stat(root); errStatsing != nil {
-			fmt.Fprintf(os.Stderr, "Error in Stat() of root: %v\n", errStatsing)
+			util.PrintlnfErr("Error in Stat() of root: %v", errStatsing)
 		} else if froot.IsDir() {
 			filepath.Walk(root, func(path string, f os.FileInfo, errWalking error) error {
 				if errWalking != nil {
-					fmt.Fprintf(os.Stderr, "Error walking fs tree: %v\n", errWalking)
+					util.PrintlnfErr("Error walking fs tree: %v", errWalking)
 				} else {
 					hash := ""
 					isEmpty := true
@@ -49,7 +49,7 @@ func walkFSTree(roots []string, key []byte, doHash bool) (files []fileNfo, numFi
 							isEmpty = false
 							if doHash {
 								if _hash, errHashing := util.FileHash(path, key); errHashing != nil {
-									fmt.Fprintf(os.Stderr, "Error hashing file: %v\n", errHashing)
+									util.PrintlnfErr("Error hashing file: %v", errHashing)
 								} else {
 									hash = _hash
 								}
@@ -72,7 +72,7 @@ func walkFSTree(roots []string, key []byte, doHash bool) (files []fileNfo, numFi
 			})
 		} else {
 			if hash, errHashing := util.FileHash(root, key); errHashing != nil {
-				fmt.Fprintf(os.Stderr, "Error hashing file: %v\n", errHashing)
+				util.PrintlnfErr("Error hashing file: %v", errHashing)
 			} else {
 				files = append(files, fileNfo{
 					IsDir:        false,

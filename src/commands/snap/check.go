@@ -1,7 +1,6 @@
 package snap
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/proofrock/snapkup/model"
@@ -14,15 +13,15 @@ func Check(bkpDir string) func(modl *model.Model) error {
 	return func(modl *model.Model) error {
 		allItems := make(map[string]bool)
 		if len(modl.Agglos) > 0 {
-			println("Checking agglos... ")
+			util.PrintlnOut("Checking agglos... ")
 			for _, agglo := range modl.Agglos {
 				ckAgglo(modl, bkpDir, agglo)
 				allItems[agglo.ID] = true
 			}
-			println("Done.")
+			util.PrintlnOut("Done.")
 		}
 
-		println("Checking blobs...")
+		util.PrintlnOut("Checking blobs...")
 		for _, blob := range modl.Blobs {
 			if blob.AggloRef == nil { // normal blob
 				ckNormalBlob(modl, bkpDir, blob)
@@ -30,24 +29,24 @@ func Check(bkpDir string) func(modl *model.Model) error {
 				if allItems[(*blob.AggloRef).AggloID] {
 					ckBlobInAgglo(modl, bkpDir, blob)
 				} else {
-					fmt.Fprintf(os.Stderr, "ERROR: agglo %s not found for blob %s\n", (*blob.AggloRef).AggloID, blob.Hash)
+					util.PrintlnfErr("ERROR: agglo %s not found for blob %s", (*blob.AggloRef).AggloID, blob.Hash)
 				}
 			}
 			allItems[blob.Hash] = true
 		}
-		println("Done.")
+		util.PrintlnOut("Done.")
 
-		println("Checking filesystem...")
+		util.PrintlnOut("Checking filesystem...")
 		files, _, _ := walkFSTree([]string{bkpDir}, nil, false)
 		for _, file := range files {
 			if file.IsDir || file.Name == model.ModelFileName {
 				continue
 			}
 			if !allItems[file.Name] {
-				fmt.Fprintf(os.Stderr, "WARNING: spurious file in filesystem: %s\n", file.FullPath)
+				util.PrintlnfErr("WARNING: spurious file in filesystem: %s", file.FullPath)
 			}
 		}
-		println("Done.")
+		util.PrintlnOut("Done.")
 
 		return nil
 	}
@@ -57,32 +56,32 @@ func ckAgglo(modl *model.Model, bkpDir string, agglo model.Agglo) {
 	fpath := model.AggloIdToPath(bkpDir, agglo.ID)
 	hash, errHashing := util.FileHash(fpath, modl.Key4Hashes)
 	if errHashing != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: hashing agglo %s; %v\n", agglo.ID, errHashing)
+		util.PrintlnfErr("ERROR: hashing agglo %s; %v", agglo.ID, errHashing)
 	} else if hash != agglo.Hash {
-		fmt.Fprintf(os.Stderr, "ERROR: bad checksum for agglo %s; %v\n", agglo.ID, errHashing)
+		util.PrintlnfErr("ERROR: bad checksum for agglo %s; %v", agglo.ID, errHashing)
 	}
 }
 
 func ckNormalBlob(modl *model.Model, bkpDir string, blob model.Blob) {
 	source, errOpening := os.Open(model.HashToPath(bkpDir, blob.Hash))
 	if errOpening != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: opening blob %s; %v\n", blob.Hash, errOpening)
+		util.PrintlnfErr("ERROR: opening blob %s; %v", blob.Hash, errOpening)
 		return
 	}
 	defer source.Close()
 
 	is, errInputStream := streams.NewIS(modl.Key4Enc, source)
 	if errInputStream != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: opening crypto stream for blob %s; %v\n", blob.Hash, errOpening)
+		util.PrintlnfErr("ERROR: opening crypto stream for blob %s; %v", blob.Hash, errOpening)
 		return
 	}
 	defer is.Close()
 
 	hash, errHashing := util.DataHash(is, modl.Key4Hashes)
 	if errHashing != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: hashing blob %s; %v\n", blob.Hash, errHashing)
+		util.PrintlnfErr("ERROR: hashing blob %s; %v", blob.Hash, errHashing)
 	} else if hash != blob.Hash {
-		fmt.Fprintf(os.Stderr, "ERROR: bad checksum for blob %s; %v\n", blob.Hash, errHashing)
+		util.PrintlnfErr("ERROR: bad checksum for blob %s; %v", blob.Hash, errHashing)
 	}
 }
 
@@ -90,28 +89,28 @@ func ckBlobInAgglo(modl *model.Model, bkpDir string, blob model.Blob) {
 	agglo := *blob.AggloRef
 	source, errOpening := os.Open(model.AggloIdToPath(bkpDir, agglo.AggloID))
 	if errOpening != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: opening blob %s; %v\n", blob.Hash, errOpening)
+		util.PrintlnfErr("ERROR: opening blob %s; %v", blob.Hash, errOpening)
 		return
 	}
 	defer source.Close()
 
 	ais, errSlicingAgglo := agglos.NewAIS(agglo.Offset, blob.BlobSize, source)
 	if errSlicingAgglo != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: opening agglo slice stream %s; %v\n", blob.Hash, errOpening)
+		util.PrintlnfErr("ERROR: opening agglo slice stream %s; %v", blob.Hash, errOpening)
 		return
 	}
 
 	is, errInputStream := streams.NewIS(modl.Key4Enc, ais)
 	if errInputStream != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: opening crypto stream for blob %s; %v\n", blob.Hash, errOpening)
+		util.PrintlnfErr("ERROR: opening crypto stream for blob %s; %v", blob.Hash, errOpening)
 		return
 	}
 	defer is.Close()
 
 	hash, errHashing := util.DataHash(is, modl.Key4Hashes)
 	if errHashing != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: hashing blob %s; %v\n", blob.Hash, errHashing)
+		util.PrintlnfErr("ERROR: hashing blob %s; %v", blob.Hash, errHashing)
 	} else if hash != blob.Hash {
-		fmt.Fprintf(os.Stderr, "ERROR: bad checksum for blob %s; %v\n", blob.Hash, errHashing)
+		util.PrintlnfErr("ERROR: bad checksum for blob %s; %v", blob.Hash, errHashing)
 	}
 }

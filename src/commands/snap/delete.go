@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/proofrock/snapkup/model"
+	"github.com/proofrock/snapkup/util"
 )
 
 func Delete(bkpDir string, toDel int) func(modl *model.Model) error {
@@ -25,7 +26,7 @@ func Delete(bkpDir string, toDel int) func(modl *model.Model) error {
 
 		modl.Snaps = append(modl.Snaps[:found], modl.Snaps[found+1:]...)
 
-		fmt.Printf("Snap %d correctly deleted. Removing dangling files...\n", toDel)
+		util.PrintlnfOut("Snap %d correctly deleted. Removing dangling files...", toDel)
 
 		blobsToDel := make(map[string]bool)
 		for _, blob := range modl.Blobs {
@@ -38,11 +39,11 @@ func Delete(bkpDir string, toDel int) func(modl *model.Model) error {
 			delete(blobsToDel, item.Hash)
 		}
 
-		fmt.Printf("Deleting %d blobs...\n", len(blobsToDel))
+		util.PrintlnfOut("Deleting %d blobs...", len(blobsToDel))
 		for hash := range blobsToDel {
 			pathToDel := model.HashToPath(bkpDir, hash)
 			if errDeleting := os.Remove(pathToDel); errDeleting != nil {
-				fmt.Fprintf(os.Stderr, "ERROR: deleting file %s; %v\n", hash, errDeleting)
+				util.PrintlnfErr("ERROR: deleting file %s; %v", hash, errDeleting)
 			}
 		}
 
@@ -53,9 +54,9 @@ func Delete(bkpDir string, toDel int) func(modl *model.Model) error {
 			}
 		}
 		modl.Blobs = nuBlobs
-		fmt.Printf("%d blobs remaining.\n", len(nuBlobs))
+		util.PrintlnfOut("%d blobs remaining.", len(nuBlobs))
 
-		println("All done.")
+		util.PrintlnOut("All done.")
 
 		return nil
 	}

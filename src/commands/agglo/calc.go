@@ -1,8 +1,8 @@
 package agglo
 
 import (
-	"fmt"
 	"github.com/proofrock/snapkup/model"
+	"github.com/proofrock/snapkup/util"
 	"github.com/proofrock/snapkup/util/agglos"
 )
 
@@ -13,7 +13,7 @@ func Calc(threshold, target int) func(modl *model.Model) error {
 			return errPlanning
 		}
 
-		fmt.Printf("%d files will be merged, resulting in %d agglo files.\n", len(blobs), len(agglos))
+		util.PrintlnfOut("%d files will be merged, resulting in %d agglo files.", len(blobs), len(agglos))
 
 		return nil
 	}

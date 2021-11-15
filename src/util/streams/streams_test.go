@@ -8,10 +8,12 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"github.com/proofrock/snapkup/util"
 )
 
 func init() {
-	println("Init random seed")
+	util.PrintlnOut("Init random seed")
 	rnd.Seed(time.Now().UnixMilli())
 }
 

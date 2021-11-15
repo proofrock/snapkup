@@ -2,6 +2,7 @@ package agglo
 
 import (
 	"github.com/proofrock/snapkup/model"
+	"github.com/proofrock/snapkup/util"
 	"github.com/proofrock/snapkup/util/agglos"
 )
 
@@ -12,7 +13,7 @@ func Unpack(bkpDir string) func(modl *model.Model) error {
 			return errSplitting
 		}
 
-		println("All ok.")
+		util.PrintlnOut("All ok.")
 
 		return nil
 	}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/proofrock/snapkup/model"
+	"github.com/proofrock/snapkup/util"
 )
 
 func Label(snap int, label string) func(modl *model.Model) error {
@@ -11,7 +12,7 @@ func Label(snap int, label string) func(modl *model.Model) error {
 		for i := 0; i < len(modl.Snaps); i++ {
 			if modl.Snaps[i].Id == snap {
 				modl.Snaps[i].Label = label
-				println("Ok.")
+				util.PrintlnOut("Ok.")
 				return nil
 			}
 		}
