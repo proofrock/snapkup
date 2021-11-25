@@ -3,7 +3,7 @@ module github.com/proofrock/snapkup
 go 1.17
 
 require (
-	github.com/DataDog/zstd v1.4.8
+	github.com/DataDog/zstd v1.5.0
 	github.com/cheggaaa/pb/v3 v3.0.8
 	github.com/dchest/siphash v1.2.2
 	github.com/rendon/testcli v1.0.0
