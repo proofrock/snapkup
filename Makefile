@@ -11,10 +11,9 @@ clean:
 
 build:
 	make build-prepare
-	cd src; go build -o snapkup; strip snapkup
+	cd src; CGO_ENABLED=1 go build -a -tags netgo,osusergo -ldflags '-w -extldflags "-static"' -o snapkup
 	mv src/snapkup bin/
 
 zbuild:
 	make build
-	upx --lzma bin/snapkup
 	cd bin; 7zr a -mx9 -t7z snapkup-linux-`uname -m`.7z snapkup
